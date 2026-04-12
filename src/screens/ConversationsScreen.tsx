@@ -1,15 +1,16 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { useNavigation } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SPACING, RADIUS, FONTS } from '../utils/theme';
 
 export default function ConversationsScreen() {
     const { user } = useAuth();
     const navigation = useNavigation();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
 
     useEffect(() => {
         fetchConversations();
@@ -19,41 +20,41 @@ export default function ConversationsScreen() {
         try {
             const { data, error } = await supabase
                 .from('conversations')
-                .select(`
-          *,
-          user1:profiles!conversations_user1_id_fkey(full_name, avatar_url),
-          user2:profiles!conversations_user2_id_fkey(full_name, avatar_url)
-        `)
-                .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`);
-
+                .select('*, profiles!conversations_user1_id_fkey(*), user2:profiles!conversations_user2_id_fkey(*)')
+                .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
+                .order('updated_at', { ascending: false });
             if (error) throw error;
             setConversations(data || []);
         } catch (error) {
-            console.error('Error fetching conversations:', error);
+            console.error(error);
         } finally {
             setLoading(false);
-            setRefreshing(false);
         }
     };
 
-    const renderConversation = ({ item }: { item: any }) => {
-        const otherUser = item.user1_id === user?.id ? item.user2 : item.user1;
+    const renderItem = ({ item }: { item: any }) => {
         const otherUserId = item.user1_id === user?.id ? item.user2_id : item.user1_id;
+        const otherUser = item.user1_id === user?.id ? item.user2 : item.profiles;
+        const initial = otherUser?.full_name?.charAt(0) || '?';
 
         return (
             <TouchableOpacity
                 style={styles.convItem}
-                onPress={() => navigation.navigate('Chat' as never, {
+                onPress={() => (navigation as any).navigate('Chat', {
                     conversationId: item.id,
                     otherUser: { ...otherUser, id: otherUserId }
-                } as never)}
+                })}
+                activeOpacity={0.7}
             >
-                <View style={styles.avatar}>
-                    <Text style={styles.avatarText}>{otherUser.full_name.charAt(0)}</Text>
+                <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.avatar}>
+                    <Text style={styles.avatarText}>{initial}</Text>
+                </LinearGradient>
+                <View style={styles.convContent}>
+                    <Text style={styles.convName}>{otherUser?.full_name || 'Unknown'}</Text>
+                    <Text style={styles.convMeta}>{otherUser?.university || 'Tap to chat'}</Text>
                 </View>
-                <View style={styles.convInfo}>
-                    <Text style={styles.convName}>{otherUser.full_name}</Text>
-                    <Text style={styles.convLastMsg} numberOfLines={1}>Tap to start chatting</Text>
+                <View style={styles.convArrow}>
+                    <Text style={styles.convArrowText}>›</Text>
                 </View>
             </TouchableOpacity>
         );
@@ -61,8 +62,8 @@ export default function ConversationsScreen() {
 
     if (loading) {
         return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color="#4F46E5" />
+            <View style={[styles.container, styles.centered]}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
         );
     }
@@ -71,19 +72,20 @@ export default function ConversationsScreen() {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Messages</Text>
+                <Text style={styles.headerSubtitle}>{conversations.length} conversations</Text>
             </View>
 
             <FlatList
                 data={conversations}
-                renderItem={renderConversation}
+                renderItem={renderItem}
                 keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.listContent}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchConversations(); }} />
-                }
+                contentContainerStyle={styles.list}
+                showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No messages yet. Match with someone to start chatting!</Text>
+                        <Text style={styles.emptyEmoji}>💬</Text>
+                        <Text style={styles.emptyTitle}>No messages yet</Text>
+                        <Text style={styles.emptyText}>Start chatting from the Discover tab</Text>
                     </View>
                 }
             />
@@ -94,70 +96,92 @@ export default function ConversationsScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.bg,
     },
     centered: {
-        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
     header: {
-        padding: 24,
         paddingTop: 60,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.md,
     },
     headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#111827',
+        ...FONTS.h1,
+        color: COLORS.white,
+    },
+    headerSubtitle: {
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        marginTop: 2,
+    },
+    list: {
+        paddingHorizontal: SPACING.md,
+        paddingBottom: 100,
     },
     convItem: {
         flexDirection: 'row',
-        padding: 16,
         alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F9FAFB',
+        padding: SPACING.md,
+        backgroundColor: COLORS.bgCard,
+        borderRadius: RADIUS.xl,
+        marginBottom: SPACING.sm,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        backgroundColor: '#EEF2FF',
+        width: 48,
+        height: 48,
+        borderRadius: 24,
         alignItems: 'center',
         justifyContent: 'center',
-        marginRight: 16,
     },
     avatarText: {
-        color: '#4F46E5',
-        fontSize: 20,
-        fontWeight: 'bold',
+        color: COLORS.white,
+        ...FONTS.h3,
     },
-    convInfo: {
+    convContent: {
         flex: 1,
+        marginLeft: SPACING.md,
     },
     convName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#111827',
+        ...FONTS.bodyBold,
+        color: COLORS.white,
     },
-    convLastMsg: {
-        fontSize: 14,
-        color: '#6B7280',
+    convMeta: {
+        ...FONTS.caption,
+        color: COLORS.textMuted,
         marginTop: 2,
     },
-    listContent: {
-        flexGrow: 1,
+    convArrow: {
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        backgroundColor: COLORS.bgInput,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    convArrowText: {
+        color: COLORS.textSecondary,
+        fontSize: 22,
+        fontWeight: '300',
     },
     emptyContainer: {
-        flex: 1,
-        justifyContent: 'center',
         alignItems: 'center',
-        padding: 40,
+        paddingTop: 120,
+    },
+    emptyEmoji: {
+        fontSize: 48,
+        marginBottom: SPACING.md,
+    },
+    emptyTitle: {
+        ...FONTS.h2,
+        color: COLORS.white,
     },
     emptyText: {
-        textAlign: 'center',
-        color: '#9CA3AF',
-        fontSize: 16,
+        ...FONTS.caption,
+        color: COLORS.textMuted,
+        marginTop: SPACING.xs,
     },
 });

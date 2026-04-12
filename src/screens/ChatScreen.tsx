@@ -1,214 +1,264 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, StyleSheet, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ActivityIndicator } from 'react-native';
-import { useRoute, useNavigation } from '@react-navigation/native';
+import React, { useState, useEffect, useRef } from 'react';
+import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
+import { useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SPACING, RADIUS, FONTS } from '../utils/theme';
 
 export default function ChatScreen() {
     const route = useRoute();
-    const navigation = useNavigation();
     const { user } = useAuth();
     // @ts-ignore
     const { conversationId, otherUser } = route.params;
-
     const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState('');
-    const [loading, setLoading] = useState(true);
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
         fetchMessages();
-
-        // Subscribe to new messages
         const channel = supabase
-            .channel(`chat:${conversationId}`)
-            .on('postgres_changes', {
-                event: 'INSERT',
-                schema: 'public',
-                table: 'messages',
-                filter: `conversation_id=eq.${conversationId}`,
-            }, (payload) => {
-                setMessages(current => [...current, payload.new]);
-            })
+            .channel(`messages:${conversationId}`)
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+                (payload) => {
+                    setMessages((prev) => [...prev, payload.new]);
+                }
+            )
             .subscribe();
 
-        return () => {
-            supabase.removeChannel(channel);
-        };
+        return () => { supabase.removeChannel(channel); };
     }, [conversationId]);
 
     const fetchMessages = async () => {
-        try {
-            const { data, error } = await supabase
-                .from('messages')
-                .select('*')
-                .eq('conversation_id', conversationId)
-                .order('created_at', { ascending: true });
-
-            if (error) throw error;
-            setMessages(data || []);
-        } catch (error) {
-            console.error('Error fetching messages:', error);
-        } finally {
-            setLoading(false);
-        }
+        const { data } = await supabase
+            .from('messages')
+            .select('*')
+            .eq('conversation_id', conversationId)
+            .order('created_at', { ascending: true });
+        setMessages(data || []);
     };
 
     const sendMessage = async () => {
         if (!newMessage.trim()) return;
-
-        const messageContent = newMessage.trim();
+        const msg = newMessage.trim();
         setNewMessage('');
-
-        try {
-            const { error } = await supabase
-                .from('messages')
-                .insert([{
-                    conversation_id: conversationId,
-                    sender_id: user?.id,
-                    content: messageContent,
-                }]);
-
-            if (error) throw error;
-        } catch (error) {
-            console.error('Error sending message:', error);
-        }
+        await supabase.from('messages').insert({
+            conversation_id: conversationId,
+            sender_id: user?.id,
+            content: msg,
+        });
+        await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
     };
 
-    const renderMessage = ({ item }: { item: any }) => {
+    const formatTime = (ts: string) => {
+        const d = new Date(ts);
+        return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    };
+
+    const renderMessage = ({ item }: any) => {
         const isMine = item.sender_id === user?.id;
         return (
-            <View style={[styles.messageBubble, isMine ? styles.myMessage : styles.theirMessage]}>
-                <Text style={[styles.messageText, isMine ? styles.myMessageText : styles.theirMessageText]}>
-                    {item.content}
-                </Text>
+            <View style={[styles.msgRow, isMine && styles.msgRowMine]}>
+                <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleOther]}>
+                    <Text style={[styles.msgText, isMine && styles.msgTextMine]}>{item.content}</Text>
+                    <Text style={[styles.msgTime, isMine && styles.msgTimeMine]}>{formatTime(item.created_at)}</Text>
+                </View>
             </View>
         );
     };
 
     return (
-        <KeyboardAvoidingView
-            style={styles.container}
-            behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-            keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
-        >
+        <View style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backBtn}>
-                    <Text style={styles.backBtnText}>←</Text>
-                </TouchableOpacity>
-                <Text style={styles.headerName}>{otherUser.full_name}</Text>
+                <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.headerAvatar}>
+                    <Text style={styles.headerAvatarText}>{otherUser?.full_name?.charAt(0)}</Text>
+                </LinearGradient>
+                <View style={styles.headerInfo}>
+                    <Text style={styles.headerName}>{otherUser?.full_name}</Text>
+                    <Text style={styles.headerMeta}>{otherUser?.university}</Text>
+                </View>
             </View>
 
-            {loading ? (
-                <ActivityIndicator style={{ flex: 1 }} color="#4F46E5" />
-            ) : (
+            {/* Messages */}
+            <KeyboardAvoidingView
+                style={styles.chatArea}
+                behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+                keyboardVerticalOffset={0}
+            >
                 <FlatList
                     ref={flatListRef}
                     data={messages}
                     renderItem={renderMessage}
                     keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.messageList}
-                    onContentSizeChange={() => flatListRef.current?.scrollToEnd()}
+                    contentContainerStyle={styles.messagesList}
+                    onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
+                    showsVerticalScrollIndicator={false}
+                    ListEmptyComponent={
+                        <View style={styles.emptyChat}>
+                            <Text style={styles.emptyChatEmoji}>👋</Text>
+                            <Text style={styles.emptyChatText}>Say hello!</Text>
+                        </View>
+                    }
                 />
-            )}
 
-            <View style={styles.inputArea}>
-                <TextInput
-                    style={styles.input}
-                    placeholder="Type a message..."
-                    value={newMessage}
-                    onChangeText={setNewMessage}
-                    multiline
-                />
-                <TouchableOpacity style={styles.sendBtn} onPress={sendMessage}>
-                    <Text style={styles.sendBtnText}>Send</Text>
-                </TouchableOpacity>
-            </View>
-        </KeyboardAvoidingView>
+                {/* Input */}
+                <View style={styles.inputBar}>
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Type a message..."
+                            placeholderTextColor={COLORS.textMuted}
+                            value={newMessage}
+                            onChangeText={setNewMessage}
+                            multiline
+                        />
+                    </View>
+                    <TouchableOpacity onPress={sendMessage} activeOpacity={0.8}>
+                        <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.sendButton}>
+                            <Text style={styles.sendButtonText}>↑</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
+            </KeyboardAvoidingView>
+        </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: COLORS.bg,
     },
     header: {
         flexDirection: 'row',
         alignItems: 'center',
-        padding: 16,
-        paddingTop: 60,
-        backgroundColor: '#fff',
+        paddingTop: 56,
+        paddingBottom: SPACING.md,
+        paddingHorizontal: SPACING.lg,
+        backgroundColor: COLORS.bgCard,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: COLORS.border,
     },
-    backBtn: {
-        marginRight: 16,
+    headerAvatar: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    backBtnText: {
-        fontSize: 24,
-        color: '#4F46E5',
-        fontWeight: 'bold',
+    headerAvatarText: {
+        color: COLORS.white,
+        ...FONTS.bodyBold,
+    },
+    headerInfo: {
+        marginLeft: SPACING.md,
     },
     headerName: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#111827',
+        ...FONTS.bodyBold,
+        color: COLORS.white,
     },
-    messageList: {
-        padding: 16,
-        paddingBottom: 24,
+    headerMeta: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
     },
-    messageBubble: {
-        maxWidth: '80%',
-        padding: 12,
-        borderRadius: 20,
-        marginBottom: 8,
+    chatArea: {
+        flex: 1,
     },
-    myMessage: {
-        alignSelf: 'flex-end',
-        backgroundColor: '#4F46E5',
-        borderBottomRightRadius: 4,
+    messagesList: {
+        padding: SPACING.md,
+        paddingBottom: SPACING.sm,
+        flexGrow: 1,
+        justifyContent: 'flex-end',
     },
-    theirMessage: {
-        alignSelf: 'flex-start',
-        backgroundColor: '#F3F4F6',
-        borderBottomLeftRadius: 4,
-    },
-    messageText: {
-        fontSize: 16,
-    },
-    myMessageText: {
-        color: '#fff',
-    },
-    theirMessageText: {
-        color: '#111827',
-    },
-    inputArea: {
+    msgRow: {
         flexDirection: 'row',
-        padding: 16,
+        marginBottom: SPACING.sm,
+    },
+    msgRowMine: {
+        justifyContent: 'flex-end',
+    },
+    bubble: {
+        maxWidth: '78%',
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm + 2,
+        borderRadius: RADIUS.xl,
+    },
+    bubbleMine: {
+        backgroundColor: COLORS.primary,
+        borderBottomRightRadius: SPACING.xs,
+    },
+    bubbleOther: {
+        backgroundColor: COLORS.bgCard,
+        borderBottomLeftRadius: SPACING.xs,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    msgText: {
+        ...FONTS.body,
+        color: COLORS.textPrimary,
+    },
+    msgTextMine: {
+        color: COLORS.white,
+    },
+    msgTime: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
+        marginTop: 4,
+        alignSelf: 'flex-end',
+        fontSize: 10,
+    },
+    msgTimeMine: {
+        color: 'rgba(255,255,255,0.6)',
+    },
+    inputBar: {
+        flexDirection: 'row',
+        alignItems: 'flex-end',
+        padding: SPACING.md,
+        paddingBottom: Platform.OS === 'ios' ? SPACING.xl : SPACING.md,
+        backgroundColor: COLORS.bgCard,
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
-        alignItems: 'center',
-        gap: 12,
+        borderTopColor: COLORS.border,
+        gap: SPACING.sm,
+    },
+    inputWrapper: {
+        flex: 1,
+        backgroundColor: COLORS.bgInput,
+        borderRadius: RADIUS.xl,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     input: {
-        flex: 1,
-        backgroundColor: '#F9FAFB',
-        borderRadius: 20,
-        paddingHorizontal: 16,
-        paddingVertical: 8,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm + 2,
+        ...FONTS.body,
+        color: COLORS.white,
         maxHeight: 100,
-        fontSize: 16,
     },
-    sendBtn: {
-        backgroundColor: '#4F46E5',
-        paddingVertical: 8,
-        paddingHorizontal: 20,
-        borderRadius: 20,
+    sendButton: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
-    sendBtnText: {
-        color: '#fff',
+    sendButtonText: {
+        color: COLORS.white,
+        fontSize: 20,
         fontWeight: 'bold',
+    },
+    emptyChat: {
+        alignItems: 'center',
+        paddingTop: 60,
+    },
+    emptyChatEmoji: {
+        fontSize: 48,
+        marginBottom: SPACING.sm,
+    },
+    emptyChatText: {
+        ...FONTS.caption,
+        color: COLORS.textMuted,
     },
 });

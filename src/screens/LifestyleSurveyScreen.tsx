@@ -1,51 +1,83 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+
+const LIFESTYLE_OPTIONS = {
+    sleep_schedule: {
+        label: '😴 Sleep Schedule',
+        options: [
+            { value: 1, label: 'Early Bird', desc: 'Asleep by 10PM' },
+            { value: 2, label: 'Moderate', desc: 'Asleep by midnight' },
+            { value: 3, label: 'Night Owl', desc: 'Up past 1AM' },
+        ],
+    },
+    cleanliness: {
+        label: '🧹 Cleanliness',
+        options: [
+            { value: 1, label: 'Very Tidy', desc: 'Spotless at all times' },
+            { value: 2, label: 'Average', desc: 'Reasonable upkeep' },
+            { value: 3, label: 'Relaxed', desc: 'Lived-in feel' },
+        ],
+    },
+    social_level: {
+        label: '🎉 Social Level',
+        options: [
+            { value: 1, label: 'Quiet', desc: 'Prefer peace & quiet' },
+            { value: 2, label: 'Balanced', desc: 'Some friends over' },
+            { value: 3, label: 'Social', desc: 'Love having guests' },
+        ],
+    },
+    smoking: {
+        label: '🚭 Smoking',
+        options: [
+            { value: 0, label: 'No', desc: "Don't smoke" },
+            { value: 1, label: 'Yes', desc: 'Smoke regularly' },
+        ],
+    },
+};
 
 export default function LifestyleSurveyScreen() {
-    const navigation = useNavigation();
     const route = useRoute();
     const { user, fetchProfile } = useAuth();
     // @ts-ignore
     const { profileData } = route.params;
 
-    const [sleep, setSleep] = useState<'Night Owl' | 'Early Bird' | null>(null);
-    const [cleanliness, setCleanliness] = useState<number>(5);
-    const [socializing, setSocializing] = useState<'Guests often' | 'Rarely' | null>(null);
-    const [smoking, setSmoking] = useState<'Yes' | 'No' | null>(null);
+    const [selections, setSelections] = useState<Record<string, number>>({});
     const [loading, setLoading] = useState(false);
 
-    const handleFinish = async () => {
-        if (!sleep || !socializing || !smoking) {
-            Alert.alert('Error', 'Please answer all questions');
+    const allSelected = Object.keys(LIFESTYLE_OPTIONS).every((k) => selections[k] !== undefined);
+
+    const handleSelect = (category: string, value: number) => {
+        setSelections((prev) => ({ ...prev, [category]: value }));
+    };
+
+    const handleSubmit = async () => {
+        if (!allSelected) {
+            Alert.alert('Error', 'Please select all lifestyle preferences');
             return;
         }
-
         setLoading(true);
         try {
-            const { error } = await supabase
-                .from('profiles')
-                .insert([{
-                    id: user?.id,
-                    full_name: profileData.fullName,
-                    university: profileData.university,
-                    department: profileData.department,
-                    gender: profileData.gender,
-                    budget_min: profileData.budgetMin,
-                    budget_max: profileData.budgetMax,
-                    location_preference: profileData.locationPreference,
-                    sleep_habit: sleep,
-                    cleanliness: cleanliness,
-                    socializing: socializing,
-                    smoking: smoking,
-                }]);
-
+            const { error } = await supabase.from('profiles').upsert({
+                id: user?.id,
+                full_name: profileData.fullName,
+                university: profileData.university,
+                department: profileData.department,
+                gender: profileData.gender,
+                budget_min: profileData.budgetMin,
+                budget_max: profileData.budgetMax,
+                location_preference: profileData.locationPreference,
+                sleep_schedule: selections.sleep_schedule,
+                cleanliness: selections.cleanliness,
+                social_level: selections.social_level,
+                smoking: selections.smoking,
+            });
             if (error) throw error;
-
-            await fetchProfile();
-            // AppNavigator will automatically switch to Main stack because profile now exists
+            fetchProfile();
         } catch (error: any) {
             Alert.alert('Error', error.message);
         } finally {
@@ -54,171 +86,133 @@ export default function LifestyleSurveyScreen() {
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <Text style={styles.title}>Lifestyle Survey</Text>
-            <Text style={styles.subtitle}>Help us find your best match</Text>
-
-            <SurveyQuestion
-                label="Sleep Habits"
-                options={['Night Owl', 'Early Bird']}
-                value={sleep}
-                onSelect={setSleep}
-            />
-
-            <View style={styles.questionGroup}>
-                <Text style={styles.label}>Cleanliness (1-10)</Text>
-                <View style={styles.cleanlinessContainer}>
-                    {[...Array(10)].map((_, i) => (
-                        <TouchableOpacity
-                            key={i + 1}
-                            style={[
-                                styles.cleanBtn,
-                                cleanliness === i + 1 && styles.cleanBtnActive
-                            ]}
-                            onPress={() => setCleanliness(i + 1)}
-                        >
-                            <Text style={[
-                                styles.cleanText,
-                                cleanliness === i + 1 && styles.cleanTextActive
-                            ]}>{i + 1}</Text>
-                        </TouchableOpacity>
-                    ))}
+        <LinearGradient colors={[COLORS.bg, '#16132B']} style={styles.container}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                {/* Progress */}
+                <View style={styles.progressRow}>
+                    <View style={[styles.progressDot, styles.progressDone]} />
+                    <View style={[styles.progressLine, styles.progressLineDone]} />
+                    <View style={[styles.progressDot, styles.progressDone]} />
+                    <View style={[styles.progressLine, styles.progressLineDone]} />
+                    <View style={[styles.progressDot, styles.progressActive]} />
                 </View>
-            </View>
 
-            <SurveyQuestion
-                label="Socializing"
-                options={['Guests often', 'Rarely']}
-                value={socializing}
-                onSelect={setSocializing}
-            />
+                <Text style={styles.stepLabel}>STEP 3 OF 3</Text>
+                <Text style={styles.title}>Lifestyle</Text>
+                <Text style={styles.subtitle}>This helps us find your ideal match</Text>
 
-            <SurveyQuestion
-                label="Smoking preference"
-                options={['Yes', 'No']}
-                value={smoking}
-                onSelect={setSmoking}
-            />
+                {Object.entries(LIFESTYLE_OPTIONS).map(([key, category]) => (
+                    <View key={key} style={styles.card}>
+                        <Text style={styles.cardTitle}>{category.label}</Text>
+                        <View style={styles.optionsGrid}>
+                            {category.options.map((opt) => {
+                                const isSelected = selections[key] === opt.value;
+                                return (
+                                    <TouchableOpacity
+                                        key={opt.value}
+                                        style={[styles.optionChip, isSelected && styles.optionChipActive]}
+                                        onPress={() => handleSelect(key, opt.value)}
+                                        activeOpacity={0.7}
+                                    >
+                                        <Text style={[styles.optionLabel, isSelected && styles.optionLabelActive]}>
+                                            {opt.label}
+                                        </Text>
+                                        <Text style={[styles.optionDesc, isSelected && styles.optionDescActive]}>
+                                            {opt.desc}
+                                        </Text>
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    </View>
+                ))}
 
-            <TouchableOpacity style={styles.finishButton} onPress={handleFinish} disabled={loading}>
-                {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.finishButtonText}>Finish Profile</Text>}
-            </TouchableOpacity>
-        </ScrollView>
+                <TouchableOpacity onPress={handleSubmit} disabled={!allSelected || loading} activeOpacity={0.85}>
+                    <LinearGradient
+                        colors={allSelected ? [COLORS.primary, COLORS.primaryLight] : [COLORS.bgCardLight, COLORS.bgCardLight]}
+                        style={styles.submitButton}
+                    >
+                        {loading ? <ActivityIndicator color="#fff" /> : (
+                            <Text style={styles.submitButtonText}>Complete Profile ✓</Text>
+                        )}
+                    </LinearGradient>
+                </TouchableOpacity>
+            </ScrollView>
+        </LinearGradient>
     );
 }
 
-const SurveyQuestion = ({ label, options, value, onSelect }: any) => (
-    <View style={styles.questionGroup}>
-        <Text style={styles.label}>{label}</Text>
-        <View style={styles.optionsContainer}>
-            {options.map((opt: string) => (
-                <TouchableOpacity
-                    key={opt}
-                    style={[
-                        styles.optionButton,
-                        value === opt && styles.optionButtonActive
-                    ]}
-                    onPress={() => onSelect(opt)}
-                >
-                    <Text style={[
-                        styles.optionText,
-                        value === opt && styles.optionTextActive
-                    ]}>{opt}</Text>
-                </TouchableOpacity>
-            ))}
-        </View>
-    </View>
-);
-
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
+    container: { flex: 1 },
+    content: { padding: SPACING.lg, paddingTop: 60, paddingBottom: SPACING.xxl },
+    progressRow: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        marginBottom: SPACING.lg,
     },
-    content: {
-        padding: 24,
-        paddingTop: 60,
+    progressDot: {
+        width: 12, height: 12, borderRadius: 6,
+        backgroundColor: COLORS.bgCardLight,
+        borderWidth: 2, borderColor: COLORS.border,
+    },
+    progressActive: {
+        backgroundColor: COLORS.primary, borderColor: COLORS.primaryLight,
+    },
+    progressDone: {
+        backgroundColor: COLORS.success, borderColor: COLORS.success,
+    },
+    progressLine: {
+        width: 40, height: 2, backgroundColor: COLORS.border,
+        marginHorizontal: SPACING.xs,
+    },
+    progressLineDone: { backgroundColor: COLORS.success },
+    stepLabel: {
+        ...FONTS.small, color: COLORS.primaryLight,
+        textAlign: 'center', marginBottom: SPACING.xs,
     },
     title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#111827',
+        ...FONTS.h1, color: COLORS.white, textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
-        color: '#6B7280',
-        marginBottom: 32,
+        ...FONTS.caption, color: COLORS.textSecondary,
+        textAlign: 'center', marginBottom: SPACING.lg,
     },
-    questionGroup: {
-        marginBottom: 24,
+    card: {
+        backgroundColor: COLORS.bgCard,
+        borderRadius: RADIUS.xxl,
+        padding: SPACING.lg,
+        borderWidth: 1, borderColor: COLORS.border,
+        marginBottom: SPACING.md,
     },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#374151',
-        marginBottom: 12,
+    cardTitle: {
+        ...FONTS.h3, color: COLORS.white, marginBottom: SPACING.md,
     },
-    optionsContainer: {
-        flexDirection: 'row',
-        gap: 12,
+    optionsGrid: { gap: SPACING.sm },
+    optionChip: {
+        padding: SPACING.md,
+        borderRadius: RADIUS.lg,
+        borderWidth: 1, borderColor: COLORS.border,
+        backgroundColor: COLORS.bgInput,
     },
-    optionButton: {
-        flex: 1,
-        padding: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
+    optionChipActive: {
+        borderColor: COLORS.primary,
+        backgroundColor: COLORS.primaryFaded,
+    },
+    optionLabel: {
+        ...FONTS.bodyBold, color: COLORS.textPrimary,
+    },
+    optionLabelActive: { color: COLORS.primaryLight },
+    optionDesc: {
+        ...FONTS.caption, color: COLORS.textMuted, marginTop: 2,
+    },
+    optionDescActive: { color: COLORS.textSecondary },
+    submitButton: {
+        padding: SPACING.md,
+        borderRadius: RADIUS.lg,
         alignItems: 'center',
-        backgroundColor: '#F9FAFB',
+        ...SHADOWS.button,
+        marginTop: SPACING.sm,
     },
-    optionButtonActive: {
-        borderColor: '#4F46E5',
-        backgroundColor: '#EEF2FF',
-    },
-    optionText: {
-        color: '#6B7280',
-        fontWeight: '500',
-    },
-    optionTextActive: {
-        color: '#4F46E5',
-    },
-    cleanlinessContainer: {
-        flexDirection: 'row',
-        flexWrap: 'wrap',
-        gap: 8,
-    },
-    cleanBtn: {
-        width: 40,
-        height: 40,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#F9FAFB',
-    },
-    cleanBtnActive: {
-        borderColor: '#4F46E5',
-        backgroundColor: '#EEF2FF',
-    },
-    cleanText: {
-        color: '#6B7280',
-    },
-    cleanTextActive: {
-        color: '#4F46E5',
-        fontWeight: 'bold',
-    },
-    finishButton: {
-        backgroundColor: '#4F46E5',
-        padding: 16,
-        borderRadius: 12,
-        alignItems: 'center',
-        marginTop: 20,
-        marginBottom: 40,
-    },
-    finishButtonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
+    submitButtonText: {
+        color: COLORS.white, ...FONTS.bodyBold, fontSize: 17,
     },
 });

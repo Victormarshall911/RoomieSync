@@ -3,6 +3,8 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicat
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function VerificationScreen() {
     const { user, profile, fetchProfile } = useAuth();
@@ -45,7 +47,7 @@ export default function VerificationScreen() {
 
             if (updateError) throw updateError;
 
-            Alert.alert('Success', 'School ID uploaded for verification!');
+            Alert.alert('Success', 'Admission letter uploaded for verification!');
             fetchProfile();
         } catch (error: any) {
             Alert.alert('Error', error.message);
@@ -56,32 +58,60 @@ export default function VerificationScreen() {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Student Verification</Text>
-            <Text style={styles.subtitle}>Upload your School ID to get verified.</Text>
+            {/* Header */}
+            <View style={styles.header}>
+                <Text style={styles.headerTitle}>Verify</Text>
+                <Text style={styles.headerSubtitle}>Prove you're a real student</Text>
+            </View>
 
-            <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
-                {image ? (
-                    <Image source={{ uri: image }} style={styles.preview} />
+            <View style={styles.content}>
+                {/* Status Banner */}
+                {profile?.is_verified ? (
+                    <LinearGradient colors={[`${COLORS.success}20`, `${COLORS.success}08`]} style={styles.statusBanner}>
+                        <Text style={styles.statusEmoji}>✅</Text>
+                        <Text style={styles.statusTitle}>Verified Student</Text>
+                        <Text style={styles.statusDesc}>Your identity has been confirmed</Text>
+                    </LinearGradient>
                 ) : (
-                    <View style={styles.placeholder}>
-                        <Text style={styles.placeholderText}>Tap to select ID Photo</Text>
+                    <View style={styles.card}>
+                        <View style={styles.cardIconRow}>
+                            <View style={styles.cardIcon}>
+                                <Text style={{ fontSize: 28 }}>📄</Text>
+                            </View>
+                        </View>
+                        <Text style={styles.cardTitle}>Upload Admission Letter</Text>
+                        <Text style={styles.cardDesc}>
+                            Take a clear photo of your school admission letter. This helps us verify that you're an active student.
+                        </Text>
+
+                        <TouchableOpacity style={styles.imagePicker} onPress={pickImage} activeOpacity={0.8}>
+                            {image ? (
+                                <Image source={{ uri: image }} style={styles.preview} />
+                            ) : (
+                                <View style={styles.placeholder}>
+                                    <Text style={{ fontSize: 32, marginBottom: SPACING.sm }}>📷</Text>
+                                    <Text style={styles.placeholderText}>Tap to select photo</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={uploadId}
+                            disabled={!image || uploading}
+                            activeOpacity={0.85}
+                        >
+                            <LinearGradient
+                                colors={image ? [COLORS.primary, COLORS.primaryLight] : [COLORS.bgCardLight, COLORS.bgCardLight]}
+                                style={styles.uploadButton}
+                            >
+                                {uploading ? <ActivityIndicator color="#fff" /> : (
+                                    <Text style={styles.uploadButtonText}>Submit for Verification</Text>
+                                )}
+                            </LinearGradient>
+                        </TouchableOpacity>
                     </View>
                 )}
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={[styles.uploadButton, !image && styles.disabled]}
-                onPress={uploadId}
-                disabled={!image || uploading}
-            >
-                {uploading ? <ActivityIndicator color="#fff" /> : <Text style={styles.uploadButtonText}>Submit for Verification</Text>}
-            </TouchableOpacity>
-
-            {profile?.is_verified && (
-                <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>✓ Verified Student</Text>
-                </View>
-            )}
+            </View>
         </View>
     );
 }
@@ -89,32 +119,87 @@ export default function VerificationScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        padding: 24,
+        backgroundColor: COLORS.bg,
+    },
+    header: {
         paddingTop: 60,
-        backgroundColor: '#fff',
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.md,
+    },
+    headerTitle: {
+        ...FONTS.h1,
+        color: COLORS.white,
+    },
+    headerSubtitle: {
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        marginTop: 2,
+    },
+    content: {
+        padding: SPACING.lg,
+    },
+    statusBanner: {
+        borderRadius: RADIUS.xxl,
+        padding: SPACING.xl,
         alignItems: 'center',
+        borderWidth: 1,
+        borderColor: `${COLORS.success}30`,
     },
-    title: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#111827',
+    statusEmoji: {
+        fontSize: 48,
+        marginBottom: SPACING.md,
     },
-    subtitle: {
-        fontSize: 14,
-        color: '#6B7280',
-        marginTop: 8,
+    statusTitle: {
+        ...FONTS.h2,
+        color: COLORS.success,
+    },
+    statusDesc: {
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        marginTop: SPACING.xs,
+    },
+    card: {
+        backgroundColor: COLORS.bgCard,
+        borderRadius: RADIUS.xxl,
+        padding: SPACING.lg,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    cardIconRow: {
+        alignItems: 'center',
+        marginBottom: SPACING.md,
+    },
+    cardIcon: {
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: COLORS.primaryFaded,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cardTitle: {
+        ...FONTS.h2,
+        color: COLORS.white,
         textAlign: 'center',
-        marginBottom: 40,
+        marginBottom: SPACING.sm,
+    },
+    cardDesc: {
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+        marginBottom: SPACING.lg,
+        lineHeight: 20,
     },
     imagePicker: {
         width: '100%',
         aspectRatio: 1.5,
-        borderRadius: 16,
+        borderRadius: RADIUS.xl,
         borderWidth: 2,
-        borderColor: '#E5E7EB',
+        borderColor: COLORS.borderLight,
         borderStyle: 'dashed',
         overflow: 'hidden',
-        backgroundColor: '#F9FAFB',
+        backgroundColor: COLORS.bgInput,
+        marginBottom: SPACING.md,
     },
     preview: {
         width: '100%',
@@ -126,35 +211,18 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     placeholderText: {
-        color: '#9CA3AF',
-        fontWeight: '500',
+        ...FONTS.caption,
+        color: COLORS.textMuted,
     },
     uploadButton: {
-        width: '100%',
-        backgroundColor: '#4F46E5',
-        padding: 16,
-        borderRadius: 12,
+        padding: SPACING.md,
+        borderRadius: RADIUS.lg,
         alignItems: 'center',
-        marginTop: 24,
+        ...SHADOWS.button,
     },
     uploadButtonText: {
-        color: '#fff',
-        fontSize: 16,
-        fontWeight: 'bold',
-    },
-    disabled: {
-        backgroundColor: '#E5E7EB',
-    },
-    statusBadge: {
-        marginTop: 40,
-        backgroundColor: '#D1FAE5',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 30,
-    },
-    statusText: {
-        color: '#059669',
-        fontWeight: 'bold',
-        fontSize: 16,
+        color: COLORS.white,
+        ...FONTS.bodyBold,
+        fontSize: 17,
     },
 });

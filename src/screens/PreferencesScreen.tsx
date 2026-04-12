@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function PreferencesScreen() {
     const navigation = useNavigation();
@@ -17,7 +19,6 @@ export default function PreferencesScreen() {
             Alert.alert('Error', 'Please enter a location preference');
             return;
         }
-
         // @ts-ignore
         navigation.navigate('LifestyleSurvey', {
             profileData: {
@@ -30,103 +31,186 @@ export default function PreferencesScreen() {
     };
 
     return (
-        <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-            <Text style={styles.title}>Preferences</Text>
-            <Text style={styles.subtitle}>Budget and Location</Text>
-
-            <View style={styles.inputGroup}>
-                <Text style={styles.label}>Budget Range (Naira per year)</Text>
-                <View style={styles.rangeContainer}>
-                    <TextInput
-                        style={[styles.input, { flex: 1 }]}
-                        placeholder="Min"
-                        keyboardType="numeric"
-                        value={budgetMin}
-                        onChangeText={setBudgetMin}
-                    />
-                    <Text style={styles.rangeDash}>-</Text>
-                    <TextInput
-                        style={[styles.input, { flex: 1 }]}
-                        placeholder="Max"
-                        keyboardType="numeric"
-                        value={budgetMax}
-                        onChangeText={setBudgetMax}
-                    />
+        <LinearGradient colors={[COLORS.bg, '#16132B']} style={styles.container}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+                {/* Progress */}
+                <View style={styles.progressRow}>
+                    <View style={[styles.progressDot, styles.progressDone]} />
+                    <View style={[styles.progressLine, styles.progressLineDone]} />
+                    <View style={[styles.progressDot, styles.progressActive]} />
+                    <View style={styles.progressLine} />
+                    <View style={styles.progressDot} />
                 </View>
-            </View>
 
-            <View style={styles.inputGroup}>
-                <Text style={styles.label}>Location Preference</Text>
-                <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Akoka, Yaba"
-                    value={location}
-                    onChangeText={setLocation}
-                />
-            </View>
+                <Text style={styles.stepLabel}>STEP 2 OF 3</Text>
+                <Text style={styles.title}>Preferences</Text>
+                <Text style={styles.subtitle}>Budget & location requirements</Text>
 
-            <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
-                <Text style={styles.nextButtonText}>Next</Text>
-            </TouchableOpacity>
-        </ScrollView>
+                <View style={styles.card}>
+                    <Text style={styles.inputLabel}>BUDGET RANGE (₦ / YEAR)</Text>
+                    <View style={styles.rangeContainer}>
+                        <View style={[styles.inputWrapper, { flex: 1 }]}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Min"
+                                placeholderTextColor={COLORS.textMuted}
+                                keyboardType="numeric"
+                                value={budgetMin}
+                                onChangeText={setBudgetMin}
+                            />
+                        </View>
+                        <View style={styles.rangeDashContainer}>
+                            <Text style={styles.rangeDash}>→</Text>
+                        </View>
+                        <View style={[styles.inputWrapper, { flex: 1 }]}>
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Max"
+                                placeholderTextColor={COLORS.textMuted}
+                                keyboardType="numeric"
+                                value={budgetMax}
+                                onChangeText={setBudgetMax}
+                            />
+                        </View>
+                    </View>
+
+                    <View style={styles.budgetPreview}>
+                        <Text style={styles.budgetPreviewText}>
+                            ₦{parseInt(budgetMin || '0').toLocaleString()} – ₦{parseInt(budgetMax || '0').toLocaleString()}
+                        </Text>
+                    </View>
+
+                    <Text style={[styles.inputLabel, { marginTop: SPACING.lg }]}>PREFERRED LOCATION</Text>
+                    <View style={styles.inputWrapper}>
+                        <TextInput
+                            style={styles.input}
+                            placeholder="e.g. Akoka, Yaba"
+                            placeholderTextColor={COLORS.textMuted}
+                            value={location}
+                            onChangeText={setLocation}
+                        />
+                    </View>
+                </View>
+
+                <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
+                    <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.nextButton}>
+                        <Text style={styles.nextButtonText}>Continue →</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </ScrollView>
+        </LinearGradient>
     );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
+    container: { flex: 1 },
+    content: { padding: SPACING.lg, paddingTop: 60 },
+    progressRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: SPACING.lg,
     },
-    content: {
-        padding: 24,
-        paddingTop: 60,
+    progressDot: {
+        width: 12, height: 12, borderRadius: 6,
+        backgroundColor: COLORS.bgCardLight,
+        borderWidth: 2, borderColor: COLORS.border,
+    },
+    progressActive: {
+        backgroundColor: COLORS.primary,
+        borderColor: COLORS.primaryLight,
+    },
+    progressDone: {
+        backgroundColor: COLORS.success,
+        borderColor: COLORS.success,
+    },
+    progressLine: {
+        width: 40, height: 2,
+        backgroundColor: COLORS.border,
+        marginHorizontal: SPACING.xs,
+    },
+    progressLineDone: {
+        backgroundColor: COLORS.success,
+    },
+    stepLabel: {
+        ...FONTS.small,
+        color: COLORS.primaryLight,
+        textAlign: 'center',
+        marginBottom: SPACING.xs,
     },
     title: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#111827',
+        ...FONTS.h1,
+        color: COLORS.white,
+        textAlign: 'center',
     },
     subtitle: {
-        fontSize: 16,
-        color: '#6B7280',
-        marginBottom: 32,
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+        marginBottom: SPACING.xl,
     },
-    inputGroup: {
-        marginBottom: 20,
+    card: {
+        backgroundColor: COLORS.bgCard,
+        borderRadius: RADIUS.xxl,
+        padding: SPACING.lg,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        marginBottom: SPACING.lg,
     },
-    label: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#374151',
-        marginBottom: 8,
+    inputLabel: {
+        ...FONTS.small,
+        color: COLORS.textSecondary,
+        marginBottom: SPACING.sm,
+        letterSpacing: 1,
     },
     rangeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10,
+        gap: SPACING.sm,
+    },
+    rangeDashContainer: {
+        width: 32, height: 32,
+        borderRadius: 16,
+        backgroundColor: COLORS.primaryFaded,
+        alignItems: 'center',
+        justifyContent: 'center',
     },
     rangeDash: {
-        fontSize: 20,
-        color: '#9CA3AF',
+        color: COLORS.primaryLight,
+        fontWeight: 'bold',
+    },
+    inputWrapper: {
+        backgroundColor: COLORS.bgInput,
+        borderRadius: RADIUS.lg,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     input: {
-        backgroundColor: '#F9FAFB',
-        borderWidth: 1,
-        borderColor: '#E5E7EB',
-        padding: 14,
-        borderRadius: 12,
-        fontSize: 16,
+        padding: SPACING.md,
+        ...FONTS.body,
+        color: COLORS.white,
+    },
+    budgetPreview: {
+        marginTop: SPACING.md,
+        backgroundColor: COLORS.primaryFaded,
+        borderRadius: RADIUS.md,
+        padding: SPACING.sm,
+        alignItems: 'center',
+    },
+    budgetPreviewText: {
+        ...FONTS.bodyBold,
+        color: COLORS.primaryLight,
     },
     nextButton: {
-        backgroundColor: '#4F46E5',
-        padding: 16,
-        borderRadius: 12,
+        padding: SPACING.md,
+        borderRadius: RADIUS.lg,
         alignItems: 'center',
-        marginTop: 20,
+        ...SHADOWS.button,
+        marginBottom: SPACING.xxl,
     },
     nextButtonText: {
-        color: '#fff',
-        fontSize: 18,
-        fontWeight: '600',
+        color: COLORS.white,
+        ...FONTS.bodyBold,
+        fontSize: 17,
     },
 });

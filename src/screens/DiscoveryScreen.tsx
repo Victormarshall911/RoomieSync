@@ -1,148 +1,171 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, RefreshControl } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { calculateMatchPercentage, Profile } from '../utils/matching';
+import { calculateMatchPercentage } from '../utils/matching';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function DiscoveryScreen() {
     const { user, profile } = useAuth();
-    const [roommates, setRoommates] = useState<Profile[]>([]);
+    const navigation = useNavigation();
+    const [profiles, setProfiles] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [refreshing, setRefreshing] = useState(false);
+    const [genderFilter, setGenderFilter] = useState<string | null>(null);
+    const [searchText, setSearchText] = useState('');
 
-    // Filters
-    const [filterGender, setFilterGender] = useState<string | null>(null);
-    const [maxBudget, setMaxBudget] = useState<number>(1000000);
-
-    useEffect(() => {
-        fetchRoommates();
-    }, []);
-
-    const fetchRoommates = async () => {
+    const fetchProfiles = useCallback(async () => {
         try {
-            let query = supabase
-                .from('profiles')
-                .select('*')
-                .neq('id', user?.id)
-                .eq('university', profile?.university); // Default to same uni
-
+            let query = supabase.from('profiles').select('*').neq('id', user?.id);
+            if (genderFilter) query = query.eq('gender', genderFilter);
             const { data, error } = await query;
-
             if (error) throw error;
-            setRoommates(data || []);
+            setProfiles(data || []);
         } catch (error) {
-            console.error('Error fetching roommates:', error);
+            console.error(error);
         } finally {
             setLoading(false);
-            setRefreshing(false);
         }
-    };
+    }, [genderFilter, user]);
 
-    const filteredRoommates = roommates.filter(r => {
-        const matchesGender = !filterGender || r.gender === filterGender;
-        const matchesBudget = r.budget_max <= maxBudget;
-        return matchesGender && matchesBudget;
-    });
+    useEffect(() => {
+        fetchProfiles();
+    }, [fetchProfiles]);
 
-    const handleMessage = async (otherUser: Profile) => {
+    const handleChat = async (otherProfile: any) => {
         try {
-            // 1. Check if conversation already exists
-            const { data: existing, error: findError } = await supabase
+            const { data: existingConvos } = await supabase
                 .from('conversations')
-                .select('id')
-                .or(`and(user1_id.eq.${user?.id},user2_id.eq.${otherUser.id}),and(user1_id.eq.${otherUser.id},user2_id.eq.${user?.id})`)
-                .single();
+                .select('*')
+                .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`);
+
+            const existing = existingConvos?.find(
+                (c: any) =>
+                    (c.user1_id === user?.id && c.user2_id === otherProfile.id) ||
+                    (c.user1_id === otherProfile.id && c.user2_id === user?.id)
+            );
 
             if (existing) {
-                // @ts-ignore
-                navigation.navigate('Chat', { conversationId: existing.id, otherUser });
-                return;
+                (navigation as any).navigate('Chat', { conversationId: existing.id, otherUser: otherProfile });
+            } else {
+                const { data, error } = await supabase
+                    .from('conversations')
+                    .insert({ user1_id: user?.id, user2_id: otherProfile.id })
+                    .select()
+                    .single();
+                if (error) throw error;
+                (navigation as any).navigate('Chat', { conversationId: data.id, otherUser: otherProfile });
             }
-
-            // 2. Create new conversation
-            const { data: newConv, error: createError } = await supabase
-                .from('conversations')
-                .insert([{ user1_id: user?.id, user2_id: otherUser.id }])
-                .select()
-                .single();
-
-            if (createError) throw createError;
-
-            // @ts-ignore
-            navigation.navigate('Chat', { conversationId: newConv.id, otherUser });
-        } catch (error: any) {
-            console.error('Error starting chat:', error);
+        } catch (error) {
+            console.error(error);
         }
     };
 
-    const renderRoommate = ({ item }: { item: Profile }) => {
-        const matchPercent = calculateMatchPercentage(profile as Profile, item);
+    const filteredProfiles = profiles.filter(p =>
+        searchText === '' || p.full_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        p.university?.toLowerCase().includes(searchText.toLowerCase())
+    );
+
+    const getMatchColor = (pct: number) => {
+        if (pct >= 80) return COLORS.success;
+        if (pct >= 60) return COLORS.primaryLight;
+        if (pct >= 40) return COLORS.accent;
+        return COLORS.textMuted;
+    };
+
+    const renderItem = ({ item }: any) => {
+        const matchPct = profile ? calculateMatchPercentage(profile, item) : 0;
+        const matchColor = getMatchColor(matchPct);
 
         return (
-            <View style={styles.card}>
-                <View style={styles.imagePlaceholder}>
-                    <Text style={styles.initials}>{item.full_name.charAt(0)}</Text>
-                    <View style={[styles.matchBadge, { backgroundColor: matchPercent > 70 ? '#059669' : '#4F46E5' }]}>
-                        <Text style={styles.matchText}>{matchPercent}% Match</Text>
+            <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => handleChat(item)}>
+                <View style={styles.cardHeader}>
+                    <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.avatar}>
+                        <Text style={styles.avatarText}>{item.full_name?.charAt(0)}</Text>
+                    </LinearGradient>
+                    <View style={[styles.matchBadge, { backgroundColor: `${matchColor}20` }]}>
+                        <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
                     </View>
                 </View>
-                <View style={styles.cardInfo}>
-                    <Text style={styles.name} numberOfLines={1}>{item.full_name}</Text>
-                    <Text style={styles.uni} numberOfLines={1}>{item.department}</Text>
-                    <Text style={styles.budget}>₦{item.budget_max.toLocaleString()}</Text>
+                <Text style={styles.name}>{item.full_name}</Text>
+                <Text style={styles.uniTag}>{item.university}</Text>
+                <Text style={styles.deptTag}>{item.department}</Text>
 
-                    <TouchableOpacity style={styles.viewButton} onPress={() => handleMessage(item)}>
-                        <Text style={styles.viewButtonText}>Message</Text>
-                    </TouchableOpacity>
+                <View style={styles.tagsRow}>
+                    {item.is_verified && (
+                        <View style={styles.verifiedTag}>
+                            <Text style={styles.verifiedTagText}>✓ Verified</Text>
+                        </View>
+                    )}
+                    <View style={styles.budgetTag}>
+                        <Text style={styles.budgetTagText}>₦{(item.budget_min / 1000).toFixed(0)}k</Text>
+                    </View>
                 </View>
-            </View>
+
+                <TouchableOpacity style={styles.chatButton} onPress={() => handleChat(item)}>
+                    <Text style={styles.chatButtonText}>Chat →</Text>
+                </TouchableOpacity>
+            </TouchableOpacity>
         );
     };
 
     if (loading) {
         return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color="#4F46E5" />
+            <View style={[styles.container, styles.centered]}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
         );
     }
 
     return (
         <View style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Discovery</Text>
+                <Text style={styles.headerTitle}>Discover</Text>
+                <Text style={styles.headerSubtitle}>{filteredProfiles.length} potential roommates</Text>
+            </View>
 
-                <View style={styles.filterRow}>
-                    {['All', 'Male', 'Female'].map(g => (
-                        <TouchableOpacity
-                            key={g}
-                            style={[
-                                styles.filterBtn,
-                                (g === 'All' ? !filterGender : filterGender === g) && styles.filterBtnActive
-                            ]}
-                            onPress={() => setFilterGender(g === 'All' ? null : g)}
-                        >
-                            <Text style={[
-                                styles.filterBtnText,
-                                (g === 'All' ? !filterGender : filterGender === g) && styles.filterBtnTextActive
-                            ]}>{g}</Text>
-                        </TouchableOpacity>
-                    ))}
+            {/* Search */}
+            <View style={styles.searchContainer}>
+                <View style={styles.searchWrapper}>
+                    <Text style={styles.searchIcon}>🔍</Text>
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search by name or uni..."
+                        placeholderTextColor={COLORS.textMuted}
+                        value={searchText}
+                        onChangeText={setSearchText}
+                    />
                 </View>
             </View>
 
+            {/* Filters */}
+            <View style={styles.filterRow}>
+                {[null, 'Male', 'Female'].map((g) => (
+                    <TouchableOpacity
+                        key={g || 'all'}
+                        style={[styles.filterChip, genderFilter === g && styles.filterChipActive]}
+                        onPress={() => setGenderFilter(g)}
+                    >
+                        <Text style={[styles.filterChipText, genderFilter === g && styles.filterChipTextActive]}>
+                            {g || 'All'}
+                        </Text>
+                    </TouchableOpacity>
+                ))}
+            </View>
+
             <FlatList
-                data={filteredRoommates}
-                renderItem={renderRoommate}
+                data={filteredProfiles}
+                renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 numColumns={2}
-                contentContainerStyle={styles.listContent}
-                refreshControl={
-                    <RefreshControl refreshing={refreshing} onRefresh={() => { setRefreshing(true); fetchRoommates(); }} />
-                }
+                columnWrapperStyle={styles.row}
+                contentContainerStyle={styles.list}
+                showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
-                    <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyText}>No roommates match your filters.</Text>
+                    <View style={styles.centered}>
+                        <Text style={styles.emptyText}>No roommates found.</Text>
                     </View>
                 }
             />
@@ -153,120 +176,172 @@ export default function DiscoveryScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: COLORS.bg,
     },
     centered: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        paddingTop: 80,
     },
     header: {
-        padding: 24,
         paddingTop: 60,
-        backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.md,
     },
     headerTitle: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#111827',
+        ...FONTS.h1,
+        color: COLORS.white,
+    },
+    headerSubtitle: {
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        marginTop: 2,
+    },
+    searchContainer: {
+        paddingHorizontal: SPACING.lg,
+        marginBottom: SPACING.sm,
+    },
+    searchWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.bgCard,
+        borderRadius: RADIUS.lg,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        paddingHorizontal: SPACING.md,
+    },
+    searchIcon: {
+        fontSize: 16,
+        marginRight: SPACING.sm,
+    },
+    searchInput: {
+        flex: 1,
+        padding: SPACING.md,
+        ...FONTS.body,
+        color: COLORS.white,
     },
     filterRow: {
         flexDirection: 'row',
-        gap: 8,
-        marginTop: 16,
+        paddingHorizontal: SPACING.lg,
+        gap: SPACING.sm,
+        marginBottom: SPACING.md,
     },
-    filterBtn: {
-        paddingVertical: 6,
-        paddingHorizontal: 16,
-        borderRadius: 20,
-        backgroundColor: '#F3F4F6',
+    filterChip: {
+        paddingVertical: SPACING.sm,
+        paddingHorizontal: SPACING.md,
+        borderRadius: RADIUS.full,
+        backgroundColor: COLORS.bgCard,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
-    filterBtnActive: {
-        backgroundColor: '#4F46E5',
+    filterChipActive: {
+        backgroundColor: COLORS.primaryFaded,
+        borderColor: COLORS.primary,
     },
-    filterBtnText: {
-        fontSize: 14,
-        color: '#6B7280',
-        fontWeight: '500',
+    filterChipText: {
+        ...FONTS.caption,
+        color: COLORS.textMuted,
     },
-    filterBtnTextActive: {
-        color: '#fff',
+    filterChipTextActive: {
+        color: COLORS.primaryLight,
     },
-    listContent: {
-        padding: 8,
+    list: {
+        paddingHorizontal: SPACING.md,
+        paddingBottom: 100,
+    },
+    row: {
+        justifyContent: 'space-between',
+        marginBottom: SPACING.md,
     },
     card: {
         flex: 1,
-        margin: 8,
-        backgroundColor: '#fff',
-        borderRadius: 16,
+        backgroundColor: COLORS.bgCard,
+        borderRadius: RADIUS.xl,
+        padding: SPACING.md,
+        marginHorizontal: SPACING.xs,
         borderWidth: 1,
-        borderColor: '#F3F4F6',
-        overflow: 'hidden',
+        borderColor: COLORS.border,
     },
-    imagePlaceholder: {
-        height: 120,
-        backgroundColor: '#F3F4F6',
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: SPACING.sm,
+    },
+    avatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
-        position: 'relative',
     },
-    initials: {
-        fontSize: 40,
-        fontWeight: 'bold',
-        color: '#9CA3AF',
+    avatarText: {
+        color: COLORS.white,
+        ...FONTS.h3,
     },
     matchBadge: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        paddingVertical: 4,
-        paddingHorizontal: 8,
-        borderRadius: 8,
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: SPACING.xs,
+        borderRadius: RADIUS.full,
     },
     matchText: {
-        color: '#fff',
-        fontSize: 10,
-        fontWeight: 'bold',
-    },
-    cardInfo: {
-        padding: 12,
+        ...FONTS.small,
+        fontWeight: '800',
     },
     name: {
-        fontSize: 15,
-        fontWeight: 'bold',
-        color: '#111827',
+        ...FONTS.bodyBold,
+        color: COLORS.white,
+        marginBottom: 2,
     },
-    uni: {
-        fontSize: 12,
-        color: '#6B7280',
-        marginTop: 2,
+    uniTag: {
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
     },
-    budget: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#10B981',
-        marginTop: 8,
+    deptTag: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
+        marginBottom: SPACING.sm,
     },
-    viewButton: {
-        marginTop: 12,
-        backgroundColor: '#EEF2FF',
-        paddingVertical: 10,
-        borderRadius: 12,
+    tagsRow: {
+        flexDirection: 'row',
+        gap: SPACING.xs,
+        marginBottom: SPACING.sm,
+        flexWrap: 'wrap',
+    },
+    verifiedTag: {
+        backgroundColor: `${COLORS.success}20`,
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: 2,
+        borderRadius: RADIUS.full,
+    },
+    verifiedTagText: {
+        ...FONTS.small,
+        color: COLORS.success,
+    },
+    budgetTag: {
+        backgroundColor: COLORS.primaryFaded,
+        paddingHorizontal: SPACING.sm,
+        paddingVertical: 2,
+        borderRadius: RADIUS.full,
+    },
+    budgetTagText: {
+        ...FONTS.small,
+        color: COLORS.primaryLight,
+    },
+    chatButton: {
+        backgroundColor: COLORS.primaryFaded,
+        padding: SPACING.sm,
+        borderRadius: RADIUS.md,
         alignItems: 'center',
     },
-    viewButtonText: {
-        color: '#4F46E5',
-        fontSize: 13,
+    chatButtonText: {
+        ...FONTS.caption,
+        color: COLORS.primaryLight,
         fontWeight: '700',
     },
-    emptyContainer: {
-        marginTop: 100,
-        alignItems: 'center',
-    },
     emptyText: {
-        color: '#6B7280',
+        ...FONTS.body,
+        color: COLORS.textMuted,
     },
 });

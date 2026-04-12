@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert, ScrollView } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { LinearGradient } from 'expo-linear-gradient';
+import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function AdminScreen() {
     const [unverified, setUnverified] = useState<any[]>([]);
@@ -43,14 +45,13 @@ export default function AdminScreen() {
     };
 
     const renderItem = ({ item }: { item: any }) => {
-        // Construct signed URL for private image
         const [imageUrl, setImageUrl] = useState<string | null>(null);
 
         useEffect(() => {
             async function getImageUrl() {
                 const { data } = await supabase.storage
                     .from('student-ids')
-                    .createSignedUrl(item.school_id_url, 60); // 60s link
+                    .createSignedUrl(item.school_id_url, 60);
                 if (data) setImageUrl(data.signedUrl);
             }
             getImageUrl();
@@ -58,29 +59,39 @@ export default function AdminScreen() {
 
         return (
             <View style={styles.card}>
-                <Text style={styles.name}>{item.full_name}</Text>
-                <Text style={styles.detail}>{item.university} | {item.department}</Text>
+                <View style={styles.cardHeader}>
+                    <LinearGradient colors={[COLORS.accent, COLORS.accentLight]} style={styles.avatar}>
+                        <Text style={styles.avatarText}>{item.full_name?.charAt(0)}</Text>
+                    </LinearGradient>
+                    <View style={styles.cardHeaderInfo}>
+                        <Text style={styles.name}>{item.full_name}</Text>
+                        <Text style={styles.detail}>{item.university} · {item.department}</Text>
+                    </View>
+                </View>
 
                 {imageUrl ? (
                     <Image source={{ uri: imageUrl }} style={styles.idPhoto} resizeMode="contain" />
                 ) : (
-                    <ActivityIndicator size="small" style={styles.idPhoto} />
+                    <View style={[styles.idPhoto, styles.idPhotoLoading]}>
+                        <ActivityIndicator size="small" color={COLORS.primary} />
+                    </View>
                 )}
 
-                <TouchableOpacity
-                    style={styles.verifyButton}
-                    onPress={() => handleVerify(item.id)}
-                >
-                    <Text style={styles.verifyButtonText}>Approve & Verify</Text>
-                </TouchableOpacity>
+                <View style={styles.cardActions}>
+                    <TouchableOpacity onPress={() => handleVerify(item.id)} activeOpacity={0.85}>
+                        <LinearGradient colors={[COLORS.success, '#34D399']} style={styles.approveButton}>
+                            <Text style={styles.approveButtonText}>✓ Approve & Verify</Text>
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
             </View>
         );
     };
 
     if (loading) {
         return (
-            <View style={styles.centered}>
-                <ActivityIndicator size="large" color="#4F46E5" />
+            <View style={[styles.container, styles.centered]}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
         );
     }
@@ -88,8 +99,10 @@ export default function AdminScreen() {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Verification Queue</Text>
-                <Text style={styles.headerSubtitle}>{unverified.length} pending requests</Text>
+                <Text style={styles.headerTitle}>Admin</Text>
+                <View style={styles.headerBadge}>
+                    <Text style={styles.headerBadgeText}>{unverified.length} pending</Text>
+                </View>
             </View>
 
             <FlatList
@@ -97,9 +110,12 @@ export default function AdminScreen() {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
+                showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
-                    <View style={styles.empty}>
-                        <Text style={styles.emptyText}>No pending verifications.</Text>
+                    <View style={styles.emptyContainer}>
+                        <Text style={styles.emptyEmoji}>🎉</Text>
+                        <Text style={styles.emptyTitle}>All clear!</Text>
+                        <Text style={styles.emptyText}>No pending verifications</Text>
                     </View>
                 }
             />
@@ -110,71 +126,113 @@ export default function AdminScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F9FAFB',
+        backgroundColor: COLORS.bg,
     },
     centered: {
-        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
     },
     header: {
-        padding: 24,
+        flexDirection: 'row',
+        alignItems: 'center',
         paddingTop: 60,
-        backgroundColor: '#fff',
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.md,
     },
     headerTitle: {
-        fontSize: 24,
-        fontWeight: 'bold',
-        color: '#111827',
+        ...FONTS.h1,
+        color: COLORS.white,
     },
-    headerSubtitle: {
-        fontSize: 14,
-        color: '#6B7280',
-        marginTop: 4,
+    headerBadge: {
+        marginLeft: SPACING.md,
+        backgroundColor: COLORS.primaryFaded,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.xs,
+        borderRadius: RADIUS.full,
+    },
+    headerBadgeText: {
+        ...FONTS.small,
+        color: COLORS.primaryLight,
     },
     list: {
-        padding: 16,
+        padding: SPACING.lg,
+        paddingBottom: 100,
     },
     card: {
-        backgroundColor: '#fff',
-        borderRadius: 16,
-        padding: 16,
-        marginBottom: 16,
+        backgroundColor: COLORS.bgCard,
+        borderRadius: RADIUS.xxl,
+        padding: SPACING.lg,
+        marginBottom: SPACING.md,
         borderWidth: 1,
-        borderColor: '#E5E7EB',
+        borderColor: COLORS.border,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: SPACING.md,
+    },
+    avatar: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    avatarText: {
+        color: COLORS.white,
+        ...FONTS.bodyBold,
+    },
+    cardHeaderInfo: {
+        marginLeft: SPACING.md,
+        flex: 1,
     },
     name: {
-        fontSize: 18,
-        fontWeight: 'bold',
+        ...FONTS.bodyBold,
+        color: COLORS.white,
     },
     detail: {
-        fontSize: 14,
-        color: '#6B7280',
-        marginBottom: 12,
+        ...FONTS.caption,
+        color: COLORS.textMuted,
+        marginTop: 2,
     },
     idPhoto: {
         width: '100%',
         height: 200,
-        backgroundColor: '#F3F4F6',
-        borderRadius: 12,
+        backgroundColor: COLORS.bgInput,
+        borderRadius: RADIUS.lg,
+        marginBottom: SPACING.md,
     },
-    verifyButton: {
-        marginTop: 16,
-        backgroundColor: '#4F46E5',
-        padding: 14,
-        borderRadius: 12,
+    idPhotoLoading: {
         alignItems: 'center',
+        justifyContent: 'center',
     },
-    verifyButtonText: {
-        color: '#fff',
-        fontWeight: 'bold',
+    cardActions: {},
+    approveButton: {
+        padding: SPACING.md,
+        borderRadius: RADIUS.lg,
+        alignItems: 'center',
+        ...SHADOWS.button,
+    },
+    approveButtonText: {
+        color: COLORS.white,
+        ...FONTS.bodyBold,
         fontSize: 16,
     },
-    empty: {
-        marginTop: 100,
+    emptyContainer: {
         alignItems: 'center',
+        paddingTop: 120,
+    },
+    emptyEmoji: {
+        fontSize: 48,
+        marginBottom: SPACING.md,
+    },
+    emptyTitle: {
+        ...FONTS.h2,
+        color: COLORS.white,
     },
     emptyText: {
-        color: '#9CA3AF',
+        ...FONTS.caption,
+        color: COLORS.textMuted,
+        marginTop: SPACING.xs,
     },
 });
