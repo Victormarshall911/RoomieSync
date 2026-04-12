@@ -1,41 +1,29 @@
-# Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
-
-# dependencies
+# node modules
 node_modules/
 
-# Expo
+supabase_schema.sql
+
+# expo
 .expo/
 dist/
 web-build/
-expo-env.d.ts
 
-# Native
-.kotlin/
-*.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+# native build artifacts
+ios/
+android/
+*.log
 
-# Metro
-.metro-health-check*
+# environment variables
+.env
+.env.local
+.env.*.local
 
-# debug
-npm-debug.*
-yarn-debug.*
-yarn-error.*
-
-# macOS
+# macos
 .DS_Store
-*.pem
 
-# local env files
-.env*.local
+# vscode
+.vscode/
 
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
+# lockfiles (optional, but often kept in git - depends on preference)
+# package-lock.json
+# yarn.lock
