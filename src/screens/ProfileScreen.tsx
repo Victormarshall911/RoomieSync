@@ -3,11 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function ProfileScreen() {
     const { user, profile } = useAuth();
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const navigation = useNavigation<any>();
 
     const updateStatus = async (status: string) => {
@@ -108,9 +111,6 @@ export default function ProfileScreen() {
                 <View style={styles.infoCard}>
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>ROOMMATE MARKETPLACE</Text>
-                        <TouchableOpacity onPress={() => navigation.navigate('CreateListing')}>
-                            <Text style={styles.editButton}>+ New</Text>
-                        </TouchableOpacity>
                     </View>
                     <Text style={styles.emptyText}>You haven't posted any rooms or ads yet.</Text>
                 </View>
@@ -143,34 +143,48 @@ export default function ProfileScreen() {
     );
 }
 
-const InfoRow = ({ label, value }: { label: string; value?: string }) => (
-    <View style={styles.infoRow}>
-        <Text style={styles.infoLabel}>{label}</Text>
-        <Text style={styles.infoValue}>{value || 'Not set'}</Text>
-    </View>
-);
+const InfoRow = ({ label, value }: { label: string; value?: string }) => {
+    const { colors: COLORS } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+    return (
+        <View style={styles.infoRow}>
+            <Text style={styles.infoLabel}>{label}</Text>
+            <Text style={styles.infoValue}>{value || 'Not set'}</Text>
+        </View>
+    );
+};
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
     },
-    content: {
-        paddingBottom: 40,
-    },
     header: {
         paddingTop: 60,
         paddingHorizontal: SPACING.lg,
-        paddingBottom: SPACING.md,
+        paddingBottom: SPACING.xl,
+    },
+    headerRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
     },
     headerTitle: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     headerSubtitle: {
         ...FONTS.caption,
         color: COLORS.textSecondary,
         marginTop: 2,
+    },
+    settingsButton: {
+        padding: SPACING.sm,
+        backgroundColor: COLORS.bgCard,
+        borderRadius: RADIUS.md,
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     profileCard: {
         alignItems: 'center',
@@ -193,13 +207,13 @@ const styles = StyleSheet.create({
         ...SHADOWS.button,
     },
     avatarText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         fontSize: 32,
         fontWeight: '800',
     },
     name: {
         ...FONTS.h2,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     email: {
         ...FONTS.caption,
@@ -225,16 +239,16 @@ const styles = StyleSheet.create({
     statusContainer: {
         flexDirection: 'row',
         gap: SPACING.sm,
-        marginTop: SPACING.xs,
+        marginTop: 12,
     },
     statusOption: {
         flex: 1,
-        backgroundColor: 'rgba(255,255,255,0.03)',
+        backgroundColor: COLORS.bgInput,
         borderRadius: RADIUS.lg,
         padding: SPACING.md,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: 'rgba(255,255,255,0.05)',
+        borderColor: COLORS.border,
     },
     statusOptionActive: {
         backgroundColor: COLORS.primaryFaded,
@@ -246,22 +260,14 @@ const styles = StyleSheet.create({
     },
     statusLabel: {
         ...FONTS.small,
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
         fontWeight: '600',
     },
     statusLabelActive: {
         color: COLORS.primaryLight,
     },
-    editButton: {
-        ...FONTS.small,
-        color: COLORS.primaryLight,
-        fontWeight: '700',
-    },
-    emptyText: {
-        ...FONTS.body,
-        color: COLORS.textMuted,
-        textAlign: 'center',
-        marginTop: SPACING.md,
+    content: {
+        paddingBottom: 40,
     },
     infoCard: {
         marginHorizontal: SPACING.lg,
@@ -289,7 +295,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: SPACING.sm + 2,
         borderBottomWidth: 1,
-        borderBottomColor: 'rgba(255,255,255,0.03)',
+        borderBottomColor: COLORS.borderLight,
     },
     infoLabel: {
         ...FONTS.body,
@@ -297,6 +303,11 @@ const styles = StyleSheet.create({
     },
     infoValue: {
         ...FONTS.bodyBold,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
+    },
+    emptyText: {
+        ...FONTS.body,
+        color: COLORS.textMuted,
+        textAlign: 'center',
     },
 });

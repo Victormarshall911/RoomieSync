@@ -1,14 +1,17 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function AuthScreen() {
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [isSignUp, setIsSignUp] = useState(false);
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
     async function handleAuth() {
         if (!email || !password) {
@@ -33,14 +36,14 @@ export default function AuthScreen() {
     }
 
     return (
-        <LinearGradient colors={[COLORS.bg, '#16132B']} style={styles.container}>
+        <LinearGradient colors={isDark ? ['#0F172A', '#1E293B'] : ['#F8FAFC', '#F1F5F9']} style={styles.container}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
                 {/* Logo / Branding */}
                 <View style={styles.brandContainer}>
-                    <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.logoBadge}>
+                    <LinearGradient colors={COLORS.gradientPrimary} style={styles.logoBadge}>
                         <Text style={styles.logoIcon}>🏠</Text>
                     </LinearGradient>
                     <Text style={styles.title}>RoomieSync</Text>
@@ -81,7 +84,7 @@ export default function AuthScreen() {
                     </View>
 
                     <TouchableOpacity onPress={handleAuth} disabled={loading} activeOpacity={0.85}>
-                        <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.button}>
+                        <LinearGradient colors={COLORS.gradientPrimary} style={styles.button}>
                             {loading ? <ActivityIndicator color="#fff" /> : (
                                 <Text style={styles.buttonText}>{isSignUp ? 'Sign Up' : 'Login'}</Text>
                             )}
@@ -106,7 +109,7 @@ export default function AuthScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
     },
@@ -133,7 +136,7 @@ const styles = StyleSheet.create({
     },
     title: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
         marginBottom: SPACING.xs,
     },
     subtitle: {
@@ -149,7 +152,7 @@ const styles = StyleSheet.create({
     },
     cardTitle: {
         ...FONTS.h2,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
         marginBottom: SPACING.lg,
     },
     inputContainer: {
@@ -171,7 +174,7 @@ const styles = StyleSheet.create({
     input: {
         padding: SPACING.md,
         ...FONTS.body,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     button: {
         padding: SPACING.md,
@@ -181,7 +184,7 @@ const styles = StyleSheet.create({
         ...SHADOWS.button,
     },
     buttonText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         ...FONTS.bodyBold,
         fontSize: 17,
     },

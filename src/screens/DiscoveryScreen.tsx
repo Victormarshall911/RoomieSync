@@ -3,10 +3,11 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, 
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { calculateMatchPercentage, Profile } from '../utils/matching';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 const PAGE_SIZE = 10;
 
@@ -27,6 +28,9 @@ export interface Listing {
 export default function DiscoveryScreen() {
     const { user, profile } = useAuth();
     const navigation = useNavigation<any>();
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+
     const [listings, setListings] = useState<Listing[]>([]);
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
@@ -117,17 +121,12 @@ export default function DiscoveryScreen() {
             if (existingConvos) {
                 navigation.navigate('Chat', { conversationId: existingConvos.id, otherUser: otherProfile });
             } else {
-                const { data, error: insertError } = await supabase
-                    .from('conversations')
-                    .insert({ user1_id: user.id, user2_id: otherProfile.id })
-                    .select()
-                    .single();
-                if (insertError) throw insertError;
-                navigation.navigate('Chat', { conversationId: data.id, otherUser: otherProfile });
+                // Navigate without an ID; ChatScreen will create it on first message
+                navigation.navigate('Chat', { conversationId: null, otherUser: otherProfile });
             }
         } catch (err: any) {
             console.error('Error handling chat navigation:', err);
-            setError('Could not start conversation. Please try again.');
+            setError('Could not access conversation. Please try again.');
         } finally {
             setLoading(false);
         }
@@ -156,7 +155,7 @@ export default function DiscoveryScreen() {
         return (
             <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => item.profiles && handleChat(item.profiles)}>
                 <View style={styles.cardHeader}>
-                    <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.avatar}>
+                    <LinearGradient colors={COLORS.gradientPrimary} style={styles.avatar}>
                         <Text style={styles.avatarText}>{creatorName.charAt(0)}</Text>
                     </LinearGradient>
                     <View style={[styles.matchBadge, { backgroundColor: `${matchColor}20` }]}>
@@ -176,7 +175,7 @@ export default function DiscoveryScreen() {
                             styles.statusTagText,
                             item.searching_for === 'Listing a Space' ? styles.statusTagTextSpace : styles.statusTagTextRoommate
                         ]}>
-                            {item.searching_for === 'Listing a Space' ? '🏠 Has Room' : '🔍 Needs Room'}
+                            {item.searching_for === 'Listing a Space' ? '🏠 Has Room' : '🔍 Needs Roomie'}
                         </Text>
                     </View>
                     {(item.profiles?.is_verified || !item.user_id) && (
@@ -225,12 +224,12 @@ export default function DiscoveryScreen() {
                         </Text>
                     </View>
                     <TouchableOpacity
-                        style={styles.profileButton}
+                        style={styles.profileShortcut}
                         onPress={() => navigation.navigate('Profile')}
                         activeOpacity={0.7}
                     >
-                        <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.profileIconGradient}>
-                            <Ionicons name="person" size={20} color={COLORS.white} />
+                        <LinearGradient colors={COLORS.gradientPrimary} style={styles.profileShortcut}>
+                            <Ionicons name="person" size={20} color={isDark ? '#F8FAFC' : '#FFFFFF'} />
                         </LinearGradient>
                     </TouchableOpacity>
                 </View>
@@ -245,7 +244,7 @@ export default function DiscoveryScreen() {
 
             {/* Search */}
             <View style={styles.searchContainer}>
-                <View style={styles.searchWrapper}>
+                <View style={styles.searchBar}>
                     <Ionicons name="search" size={18} color={COLORS.textMuted} style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
@@ -298,11 +297,25 @@ export default function DiscoveryScreen() {
                     )
                 }
             />
+
+            {/* Floating Action Button */}
+            <TouchableOpacity
+                style={styles.fab}
+                activeOpacity={0.8}
+                onPress={() => navigation.navigate('CreateListing')}
+            >
+                <LinearGradient
+                    colors={COLORS.gradientPrimary}
+                    style={styles.fabGradient}
+                >
+                    <Ionicons name="add" size={32} color={isDark ? '#F8FAFC' : '#FFFFFF'} />
+                </LinearGradient>
+            </TouchableOpacity>
         </View>
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -325,24 +338,18 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     headerSubtitle: {
-        ...FONTS.caption,
+        ...FONTS.body,
         color: COLORS.textSecondary,
-        marginTop: 2,
     },
-    profileButton: {
-        ...SHADOWS.button,
-    },
-    profileIconGradient: {
+    profileShortcut: {
         width: 44,
         height: 44,
         borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.1)',
     },
     errorBanner: {
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -360,89 +367,90 @@ const styles = StyleSheet.create({
     },
     searchContainer: {
         paddingHorizontal: SPACING.lg,
-        marginBottom: SPACING.sm,
+        marginBottom: SPACING.md,
     },
-    searchWrapper: {
+    searchBar: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.bgCard,
+        backgroundColor: COLORS.bgInput,
         borderRadius: RADIUS.lg,
+        paddingHorizontal: SPACING.md,
+        height: 50,
         borderWidth: 1,
         borderColor: COLORS.border,
-        paddingHorizontal: SPACING.md,
     },
     searchIcon: {
-        fontSize: 16,
         marginRight: SPACING.sm,
     },
     searchInput: {
         flex: 1,
-        padding: SPACING.md,
+        color: COLORS.textPrimary,
         ...FONTS.body,
-        color: COLORS.white,
     },
     filterRow: {
         flexDirection: 'row',
         paddingHorizontal: SPACING.lg,
+        marginBottom: SPACING.lg,
         gap: SPACING.sm,
-        marginBottom: SPACING.md,
     },
     filterChip: {
+        paddingHorizontal: SPACING.md,
         paddingVertical: 8,
-        paddingHorizontal: 16,
         borderRadius: RADIUS.full,
         backgroundColor: COLORS.bgCard,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
     filterChipActive: {
-        backgroundColor: COLORS.primaryFaded,
+        backgroundColor: COLORS.primary,
         borderColor: COLORS.primary,
     },
     filterChipText: {
         ...FONTS.caption,
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
     },
     filterChipTextActive: {
-        color: COLORS.primaryLight,
+        color: COLORS.white,
+        fontWeight: '700',
     },
     list: {
         paddingHorizontal: SPACING.md,
-        paddingBottom: 40,
+        paddingBottom: 100,
     },
     row: {
         justifyContent: 'space-between',
-        marginBottom: SPACING.md,
     },
     card: {
-        width: '48.5%',
+        width: '48%',
         backgroundColor: COLORS.bgCard,
         borderRadius: RADIUS.xl,
         padding: SPACING.md,
+        marginBottom: SPACING.md,
         borderWidth: 1,
         borderColor: COLORS.border,
+        ...SHADOWS.card,
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: SPACING.sm,
+        alignItems: 'flex-start',
+        marginBottom: SPACING.md,
     },
     avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 50,
+        height: 50,
+        borderRadius: RADIUS.lg,
         alignItems: 'center',
         justifyContent: 'center',
     },
     avatarText: {
-        color: COLORS.white,
-        ...FONTS.h3,
+        ...FONTS.h2,
+        color: '#FFFFFF',
     },
     matchBadge: {
-        paddingHorizontal: SPACING.sm,
-        paddingVertical: SPACING.xs,
-        borderRadius: RADIUS.full,
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: RADIUS.md,
     },
     matchText: {
         ...FONTS.small,
@@ -450,84 +458,109 @@ const styles = StyleSheet.create({
     },
     name: {
         ...FONTS.bodyBold,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
         marginBottom: 2,
     },
     uniTag: {
         ...FONTS.caption,
         color: COLORS.textSecondary,
+        marginBottom: 2,
     },
     deptTag: {
-        ...FONTS.small,
+        ...FONTS.small as any,
         color: COLORS.textMuted,
-        marginBottom: SPACING.sm,
+        marginBottom: SPACING.md,
+        textTransform: 'uppercase',
+        letterSpacing: 0.5,
     },
     tagsRow: {
-        flexDirection: 'row',
-        gap: SPACING.xs,
-        marginBottom: SPACING.sm,
-        flexWrap: 'wrap',
+        flexDirection: 'column',
+        gap: 6,
+        marginBottom: SPACING.md,
+    },
+    statusTag: {
+        alignSelf: 'flex-start',
+        paddingHorizontal: 8,
+        paddingVertical: 4,
+        borderRadius: RADIUS.sm,
+    },
+    statusTagSpace: {
+        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    },
+    statusTagRoommate: {
+        backgroundColor: 'rgba(108, 58, 237, 0.1)',
+    },
+    statusTagText: {
+        ...FONTS.small,
+        fontWeight: '700',
+    },
+    statusTagTextSpace: {
+        color: COLORS.success,
+    },
+    statusTagTextRoommate: {
+        color: COLORS.primaryLight,
     },
     verifiedTag: {
-        backgroundColor: `${COLORS.success}20`,
-        paddingHorizontal: SPACING.sm,
-        paddingVertical: 2,
-        borderRadius: RADIUS.full,
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
     },
     verifiedTagText: {
         ...FONTS.small,
         color: COLORS.success,
+        fontWeight: '700',
     },
     budgetTag: {
-        backgroundColor: COLORS.primaryFaded,
-        paddingHorizontal: SPACING.sm,
+        alignSelf: 'flex-start',
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        paddingHorizontal: 8,
         paddingVertical: 2,
-        borderRadius: RADIUS.full,
+        borderRadius: RADIUS.md,
     },
     budgetTagText: {
         ...FONTS.small,
-        color: COLORS.primaryLight,
+        color: COLORS.textSecondary,
     },
     chatButton: {
-        backgroundColor: COLORS.primaryFaded,
-        padding: SPACING.sm,
-        borderRadius: RADIUS.md,
+        backgroundColor: COLORS.bgInput,
+        borderRadius: RADIUS.lg,
+        paddingVertical: 10,
         alignItems: 'center',
+        marginTop: 'auto',
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     chatButtonText: {
-        ...FONTS.caption,
+        ...FONTS.small,
         color: COLORS.primaryLight,
-        fontWeight: '700',
+        fontWeight: '800',
     },
     footerLoading: {
         paddingVertical: SPACING.md,
         alignItems: 'center',
     },
-    statusTag: {
-        paddingHorizontal: SPACING.sm,
-        paddingVertical: 2,
-        borderRadius: RADIUS.sm,
-        marginBottom: 4,
-    },
-    statusTagRoommate: {
-        backgroundColor: `${COLORS.accent}20`,
-    },
-    statusTagSpace: {
-        backgroundColor: `${COLORS.success}20`,
-    },
-    statusTagText: {
-        ...FONTS.small,
-        fontWeight: '700',
-        fontSize: 10,
-    },
-    statusTagTextRoommate: {
-        color: COLORS.accent,
-    },
-    statusTagTextSpace: {
-        color: COLORS.success,
-    },
     emptyText: {
         ...FONTS.body,
         color: COLORS.textMuted,
+    },
+    fab: {
+        position: 'absolute',
+        bottom: 100,
+        right: SPACING.lg,
+        width: 60,
+        height: 60,
+        borderRadius: 30,
+        ...SHADOWS.button,
+        elevation: 8,
+    },
+    fabGradient: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 30,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.2)',
     },
 });

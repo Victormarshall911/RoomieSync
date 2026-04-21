@@ -8,12 +8,13 @@ import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AdminScreen from '../screens/AdminScreen';
 import { useAuth } from '../context/AuthContext';
-import { COLORS } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
 
 const Tab = createBottomTabNavigator();
 
 export default function MainTabs() {
     const { profile } = useAuth();
+    const { colors: COLORS, isDark } = useTheme();
 
     return (
         <Tab.Navigator
@@ -27,15 +28,17 @@ export default function MainTabs() {
                     bottom: 24,
                     left: 40,
                     right: 40,
-                    backgroundColor: 'rgba(26, 23, 43, 0.98)',
+                    backgroundColor: isDark ? 'rgba(26, 23, 43, 0.98)' : 'rgba(255, 255, 255, 0.98)',
                     borderRadius: 32,
                     height: 64,
                     borderTopWidth: 0,
                     elevation: 12,
                     shadowColor: '#000',
                     shadowOffset: { width: 0, height: 4 },
-                    shadowOpacity: 0.3,
+                    shadowOpacity: isDark ? 0.3 : 0.1,
                     shadowRadius: 8,
+                    borderWidth: 1,
+                    borderColor: COLORS.border,
                 },
                 tabBarLabelStyle: {
                     fontSize: 9,

@@ -2,11 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function PreferencesScreen() {
     const navigation = useNavigation();
     const route = useRoute();
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     // @ts-ignore
     const { profileData } = route.params;
 
@@ -31,7 +34,7 @@ export default function PreferencesScreen() {
     };
 
     return (
-        <LinearGradient colors={[COLORS.bg, '#16132B']} style={styles.container}>
+        <LinearGradient colors={isDark ? [COLORS.bg, '#16132B'] : [COLORS.bg, '#F1F5F9']} style={styles.container}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Progress */}
                 <View style={styles.progressRow}>
@@ -93,7 +96,7 @@ export default function PreferencesScreen() {
                 </View>
 
                 <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
-                    <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.nextButton}>
+                    <LinearGradient colors={COLORS.gradientPrimary} style={styles.nextButton}>
                         <Text style={styles.nextButtonText}>Continue →</Text>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -102,7 +105,7 @@ export default function PreferencesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: { flex: 1 },
     content: { padding: SPACING.lg, paddingTop: 60 },
     progressRow: {
@@ -113,7 +116,7 @@ const styles = StyleSheet.create({
     },
     progressDot: {
         width: 12, height: 12, borderRadius: 6,
-        backgroundColor: COLORS.bgCardLight,
+        backgroundColor: COLORS.bgInput,
         borderWidth: 2, borderColor: COLORS.border,
     },
     progressActive: {
@@ -140,7 +143,7 @@ const styles = StyleSheet.create({
     },
     title: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
         textAlign: 'center',
     },
     subtitle: {
@@ -188,7 +191,7 @@ const styles = StyleSheet.create({
     input: {
         padding: SPACING.md,
         ...FONTS.body,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     budgetPreview: {
         marginTop: SPACING.md,
@@ -209,7 +212,7 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.xxl,
     },
     nextButtonText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         ...FONTS.bodyBold,
         fontSize: 17,
     },

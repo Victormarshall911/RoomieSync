@@ -12,6 +12,7 @@ import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import VerificationScreen from '../screens/VerificationScreen';
 import CreateListingScreen from '../screens/CreateListingScreen';
+import { useTheme } from '../context/ThemeContext';
 import { Profile } from '../utils/matching';
 
 export type RootStackParamList = {
@@ -30,11 +31,12 @@ const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
     const { session, profile, loading } = useAuth();
+    const { colors: COLORS } = useTheme();
 
     if (loading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F0F1A' }}>
-                <ActivityIndicator size="large" color="#6C3AED" />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
+                <ActivityIndicator size="large" color={COLORS.primary} />
             </View>
         );
     }

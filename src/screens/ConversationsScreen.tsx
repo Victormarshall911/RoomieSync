@@ -3,11 +3,14 @@ import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator }
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
 export default function ConversationsScreen() {
     const { user } = useAuth();
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const navigation = useNavigation();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -20,9 +23,10 @@ export default function ConversationsScreen() {
         try {
             const { data, error } = await supabase
                 .from('conversations')
-                .select('*, profiles!conversations_user1_id_fkey(*), user2:profiles!conversations_user2_id_fkey(*)')
+                .select('*, profiles!conversations_user1_id_fkey(*), user2:profiles!conversations_user2_id_fkey(*), messages!inner(id)')
                 .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(1, { foreignTable: 'messages' });
             if (error) throw error;
             setConversations(data || []);
         } catch (error) {
@@ -46,7 +50,7 @@ export default function ConversationsScreen() {
                 })}
                 activeOpacity={0.7}
             >
-                <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.avatar}>
+                <LinearGradient colors={COLORS.gradientPrimary} style={styles.avatar}>
                     <Text style={styles.avatarText}>{initial}</Text>
                 </LinearGradient>
                 <View style={styles.convContent}>
@@ -93,7 +97,7 @@ export default function ConversationsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -109,7 +113,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     headerSubtitle: {
         ...FONTS.caption,
@@ -138,7 +142,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     avatarText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         ...FONTS.h3,
     },
     convContent: {
@@ -147,11 +151,11 @@ const styles = StyleSheet.create({
     },
     convName: {
         ...FONTS.bodyBold,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     convMeta: {
         ...FONTS.caption,
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
         marginTop: 2,
     },
     convArrow: {
@@ -177,11 +181,11 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         ...FONTS.h2,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     emptyText: {
         ...FONTS.caption,
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
         marginTop: SPACING.xs,
     },
 });

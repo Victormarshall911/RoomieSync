@@ -3,56 +3,100 @@ import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, Keyboard
 import { useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
 export default function ChatScreen() {
     const route = useRoute();
     const { user } = useAuth();
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     // @ts-ignore
     const { conversationId, otherUser } = route.params;
+    const [activeConversationId, setActiveConversationId] = useState<string | null>(conversationId);
     const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const flatListRef = useRef<FlatList>(null);
 
     useEffect(() => {
+        if (!activeConversationId) return;
+
         fetchMessages();
         const channel = supabase
-            .channel(`messages:${conversationId}`)
+            .channel(`messages:${activeConversationId}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${conversationId}` },
+                { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${activeConversationId}` },
                 (payload) => {
-                    setMessages((prev) => [...prev, payload.new]);
+                    setMessages((prev) => {
+                        const exists = prev.find(m => m.id === payload.new.id);
+                        if (exists) return prev;
+                        return [...prev, payload.new];
+                    });
                 }
             )
             .subscribe();
 
         return () => { supabase.removeChannel(channel); };
-    }, [conversationId]);
+    }, [activeConversationId]);
 
     const fetchMessages = async () => {
+        if (!activeConversationId) return;
         const { data } = await supabase
             .from('messages')
             .select('*')
-            .eq('conversation_id', conversationId)
+            .eq('conversation_id', activeConversationId)
             .order('created_at', { ascending: true });
         setMessages(data || []);
     };
 
     const sendMessage = async () => {
-        if (!newMessage.trim()) return;
+        if (!newMessage.trim() || !user) return;
         const msg = newMessage.trim();
         setNewMessage('');
-        await supabase.from('messages').insert({
-            conversation_id: conversationId,
-            sender_id: user?.id,
+
+        let currentConvoId = activeConversationId;
+
+        // Late initialization if this is a new conversation
+        if (!currentConvoId) {
+            try {
+                const { data, error } = await supabase
+                    .from('conversations')
+                    .insert({ user1_id: user.id, user2_id: otherUser.id })
+                    .select()
+                    .single();
+
+                if (error) throw error;
+                currentConvoId = data.id;
+                setActiveConversationId(currentConvoId);
+            } catch (err) {
+                console.error('Error creating conversation:', err);
+                return;
+            }
+        }
+
+        const { error: msgError } = await supabase.from('messages').insert({
+            conversation_id: currentConvoId,
+            sender_id: user.id,
             content: msg,
         });
-        await supabase.from('conversations').update({ updated_at: new Date().toISOString() }).eq('id', conversationId);
+
+        if (msgError) {
+            console.error('Error sending message:', msgError);
+            return;
+        }
+
+        // Optional: manually refresh or let subscription handle it
+        // If it's the first message, subscription might not have started yet, 
+        // so we manually add it or wait for setActiveConversationId's effect.
+        if (!activeConversationId) {
+            // First message will be fetched by the useEffect trigger
+        }
     };
 
     const formatTime = (ts: string) => {
+        if (!ts) return '';
         const d = new Date(ts);
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
@@ -73,7 +117,7 @@ export default function ChatScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.headerAvatar}>
+                <LinearGradient colors={COLORS.gradientPrimary} style={styles.headerAvatar}>
                     <Text style={styles.headerAvatarText}>{otherUser?.full_name?.charAt(0)}</Text>
                 </LinearGradient>
                 <View style={styles.headerInfo}>
@@ -117,7 +161,7 @@ export default function ChatScreen() {
                         />
                     </View>
                     <TouchableOpacity onPress={sendMessage} activeOpacity={0.8}>
-                        <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.sendButton}>
+                        <LinearGradient colors={COLORS.gradientPrimary} style={styles.sendButton}>
                             <Text style={styles.sendButtonText}>↑</Text>
                         </LinearGradient>
                     </TouchableOpacity>
@@ -127,7 +171,7 @@ export default function ChatScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -150,7 +194,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     headerAvatarText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         ...FONTS.bodyBold,
     },
     headerInfo: {
@@ -158,11 +202,11 @@ const styles = StyleSheet.create({
     },
     headerName: {
         ...FONTS.bodyBold,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     headerMeta: {
         ...FONTS.small,
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
     },
     chatArea: {
         flex: 1,
@@ -201,7 +245,7 @@ const styles = StyleSheet.create({
         color: COLORS.textPrimary,
     },
     msgTextMine: {
-        color: COLORS.white,
+        color: '#FFFFFF',
     },
     msgTime: {
         ...FONTS.small,
@@ -234,7 +278,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.md,
         paddingVertical: SPACING.sm + 2,
         ...FONTS.body,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
         maxHeight: 100,
     },
     sendButton: {
@@ -245,7 +289,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     sendButtonText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         fontSize: 20,
         fontWeight: 'bold',
     },

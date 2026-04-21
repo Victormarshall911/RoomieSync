@@ -3,11 +3,15 @@ import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'rea
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function SettingsScreen() {
     const { user } = useAuth();
+    const { themeMode, setThemeMode, colors: COLORS, isDark } = useTheme();
     const navigation = useNavigation<any>();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
     const handleLogout = async () => {
         Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -21,6 +25,30 @@ export default function SettingsScreen() {
             },
         ]);
     };
+
+    const handleThemePress = () => {
+        Alert.alert(
+            'Select Theme',
+            'Choose your preferred appearance',
+            [
+                { text: 'Device System', onPress: () => setThemeMode('system') },
+                { text: 'Light Mode', onPress: () => setThemeMode('light') },
+                { text: 'Dark Mode', onPress: () => setThemeMode('dark') },
+                { text: 'Cancel', style: 'cancel' },
+            ]
+        );
+    };
+
+    const SettingItem = ({ icon, title, value, onPress, color = COLORS.textPrimary }: any) => (
+        <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={onPress}>
+            <Ionicons name={icon} size={22} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
+            <View style={styles.itemContent}>
+                <Text style={[styles.itemTitle, { color }]}>{title}</Text>
+            </View>
+            {value && <Text style={styles.itemSubtitle}>{value}</Text>}
+            <Text style={styles.itemIcon}>→</Text>
+        </TouchableOpacity>
+    );
 
     const handleDeleteAccount = async () => {
         Alert.alert(
@@ -74,6 +102,16 @@ export default function SettingsScreen() {
 
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>APPEARANCE</Text>
+                    <SettingItem
+                        icon={isDark ? "moon-outline" : "sunny-outline"}
+                        title="App Theme"
+                        value={themeMode === 'system' ? 'System' : themeMode === 'light' ? 'Light' : 'Dark'}
+                        onPress={handleThemePress}
+                    />
+                </View>
+
+                <View style={styles.section}>
                     <Text style={styles.sectionTitle}>ACCOUNT</Text>
 
                     <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={() => navigation.navigate('Verify')}>
@@ -123,7 +161,7 @@ export default function SettingsScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -138,7 +176,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     content: {
         padding: SPACING.lg,
@@ -171,7 +209,7 @@ const styles = StyleSheet.create({
     },
     itemTitle: {
         ...FONTS.bodyBold,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     itemSubtitle: {
         ...FONTS.caption,

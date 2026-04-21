@@ -2,10 +2,13 @@ import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function ProfileSetupScreen() {
     const navigation = useNavigation();
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const [fullName, setFullName] = useState('');
     const [university, setUniversity] = useState('');
     const [department, setDepartment] = useState('');
@@ -23,7 +26,7 @@ export default function ProfileSetupScreen() {
     };
 
     return (
-        <LinearGradient colors={[COLORS.bg, '#16132B']} style={styles.container}>
+        <LinearGradient colors={isDark ? [COLORS.bg, '#16132B'] : [COLORS.bg, '#F1F5F9']} style={styles.container}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Progress */}
                 <View style={styles.progressRow}>
@@ -39,9 +42,9 @@ export default function ProfileSetupScreen() {
                 <Text style={styles.subtitle}>Tell us a bit about yourself</Text>
 
                 <View style={styles.card}>
-                    <InputField label="Full Name" placeholder="e.g. Victor Adebayo" value={fullName} onChangeText={setFullName} />
-                    <InputField label="University" placeholder="e.g. UNILAG" value={university} onChangeText={setUniversity} />
-                    <InputField label="Department" placeholder="e.g. Computer Science" value={department} onChangeText={setDepartment} />
+                    <InputField COLORS={COLORS} styles={styles} label="Full Name" placeholder="e.g. Victor Adebayo" value={fullName} onChangeText={setFullName} />
+                    <InputField COLORS={COLORS} styles={styles} label="University" placeholder="e.g. UNILAG" value={university} onChangeText={setUniversity} />
+                    <InputField COLORS={COLORS} styles={styles} label="Department" placeholder="e.g. Computer Science" value={department} onChangeText={setDepartment} />
 
                     <Text style={styles.inputLabel}>GENDER</Text>
                     <View style={styles.genderContainer}>
@@ -61,7 +64,7 @@ export default function ProfileSetupScreen() {
                 </View>
 
                 <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
-                    <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.nextButton}>
+                    <LinearGradient colors={COLORS.gradientPrimary} style={styles.nextButton}>
                         <Text style={styles.nextButtonText}>Continue →</Text>
                     </LinearGradient>
                 </TouchableOpacity>
@@ -70,7 +73,7 @@ export default function ProfileSetupScreen() {
     );
 }
 
-const InputField = ({ label, placeholder, value, onChangeText, keyboardType }: any) => (
+const InputField = ({ label, placeholder, value, onChangeText, keyboardType, COLORS, styles }: any) => (
     <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>{label.toUpperCase()}</Text>
         <View style={styles.inputWrapper}>
@@ -86,7 +89,7 @@ const InputField = ({ label, placeholder, value, onChangeText, keyboardType }: a
     </View>
 );
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: { flex: 1 },
     content: { padding: SPACING.lg, paddingTop: 60 },
     progressRow: {
@@ -99,7 +102,7 @@ const styles = StyleSheet.create({
         width: 12,
         height: 12,
         borderRadius: 6,
-        backgroundColor: COLORS.bgCardLight,
+        backgroundColor: COLORS.bgInput,
         borderWidth: 2,
         borderColor: COLORS.border,
     },
@@ -122,7 +125,7 @@ const styles = StyleSheet.create({
     },
     title: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
         textAlign: 'center',
     },
     subtitle: {
@@ -155,7 +158,7 @@ const styles = StyleSheet.create({
     input: {
         padding: SPACING.md,
         ...FONTS.body,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     genderContainer: {
         flexDirection: 'row',
@@ -176,7 +179,7 @@ const styles = StyleSheet.create({
     },
     genderText: {
         ...FONTS.bodyBold,
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
     },
     genderTextActive: {
         color: COLORS.primaryLight,
@@ -189,7 +192,7 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.xxl,
     },
     nextButtonText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         ...FONTS.bodyBold,
         fontSize: 17,
     },

@@ -3,11 +3,14 @@ import { View, Text, TouchableOpacity, StyleSheet, Image, Alert, ActivityIndicat
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function VerificationScreen() {
     const { user, profile, fetchProfile } = useAuth();
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const [image, setImage] = useState<string | null>(null);
     const [uploading, setUploading] = useState(false);
 
@@ -101,7 +104,7 @@ export default function VerificationScreen() {
                             activeOpacity={0.85}
                         >
                             <LinearGradient
-                                colors={image ? [COLORS.primary, COLORS.primaryLight] : [COLORS.bgCardLight, COLORS.bgCardLight]}
+                                colors={image ? COLORS.gradientPrimary : [COLORS.bgInput, COLORS.bgInput]}
                                 style={styles.uploadButton}
                             >
                                 {uploading ? <ActivityIndicator color="#fff" /> : (
@@ -116,7 +119,7 @@ export default function VerificationScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -128,7 +131,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     headerSubtitle: {
         ...FONTS.caption,
@@ -179,7 +182,7 @@ const styles = StyleSheet.create({
     },
     cardTitle: {
         ...FONTS.h2,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
         textAlign: 'center',
         marginBottom: SPACING.sm,
     },
@@ -195,7 +198,7 @@ const styles = StyleSheet.create({
         aspectRatio: 1.5,
         borderRadius: RADIUS.xl,
         borderWidth: 2,
-        borderColor: COLORS.borderLight,
+        borderColor: COLORS.border,
         borderStyle: 'dashed',
         overflow: 'hidden',
         backgroundColor: COLORS.bgInput,
@@ -221,7 +224,7 @@ const styles = StyleSheet.create({
         ...SHADOWS.button,
     },
     uploadButtonText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         ...FONTS.bodyBold,
         fontSize: 17,
     },

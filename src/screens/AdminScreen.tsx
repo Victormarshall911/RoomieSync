@@ -1,10 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function AdminScreen() {
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const [unverified, setUnverified] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
@@ -123,7 +127,7 @@ export default function AdminScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -141,7 +145,7 @@ const styles = StyleSheet.create({
     },
     headerTitle: {
         ...FONTS.h1,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     headerBadge: {
         marginLeft: SPACING.md,
@@ -179,7 +183,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     avatarText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         ...FONTS.bodyBold,
     },
     cardHeaderInfo: {
@@ -188,11 +192,11 @@ const styles = StyleSheet.create({
     },
     name: {
         ...FONTS.bodyBold,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     detail: {
         ...FONTS.caption,
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
         marginTop: 2,
     },
     idPhoto: {
@@ -214,7 +218,7 @@ const styles = StyleSheet.create({
         ...SHADOWS.button,
     },
     approveButtonText: {
-        color: COLORS.white,
+        color: '#FFFFFF',
         ...FONTS.bodyBold,
         fontSize: 16,
     },
@@ -228,11 +232,11 @@ const styles = StyleSheet.create({
     },
     emptyTitle: {
         ...FONTS.h2,
-        color: COLORS.white,
+        color: COLORS.textPrimary,
     },
     emptyText: {
         ...FONTS.caption,
-        color: COLORS.textMuted,
+        color: COLORS.textSecondary,
         marginTop: SPACING.xs,
     },
 });

@@ -4,7 +4,8 @@ import { useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { useTheme } from '../context/ThemeContext';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 const LIFESTYLE_OPTIONS = {
     sleep_schedule: {
@@ -43,6 +44,8 @@ const LIFESTYLE_OPTIONS = {
 export default function LifestyleSurveyScreen() {
     const route = useRoute();
     const { user, fetchProfile } = useAuth();
+    const { colors: COLORS, isDark } = useTheme();
+    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     // @ts-ignore
     const { profileData } = route.params;
 
@@ -86,7 +89,7 @@ export default function LifestyleSurveyScreen() {
     };
 
     return (
-        <LinearGradient colors={[COLORS.bg, '#16132B']} style={styles.container}>
+        <LinearGradient colors={isDark ? [COLORS.bg, '#16132B'] : [COLORS.bg, '#F1F5F9']} style={styles.container}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Progress */}
                 <View style={styles.progressRow}>
@@ -129,7 +132,7 @@ export default function LifestyleSurveyScreen() {
 
                 <TouchableOpacity onPress={handleSubmit} disabled={!allSelected || loading} activeOpacity={0.85}>
                     <LinearGradient
-                        colors={allSelected ? [COLORS.primary, COLORS.primaryLight] : [COLORS.bgCardLight, COLORS.bgCardLight]}
+                        colors={allSelected ? COLORS.gradientPrimary : [COLORS.bgInput, COLORS.bgInput]}
                         style={styles.submitButton}
                     >
                         {loading ? <ActivityIndicator color="#fff" /> : (
@@ -142,7 +145,7 @@ export default function LifestyleSurveyScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (COLORS: any) => StyleSheet.create({
     container: { flex: 1 },
     content: { padding: SPACING.lg, paddingTop: 60, paddingBottom: SPACING.xxl },
     progressRow: {
@@ -151,7 +154,7 @@ const styles = StyleSheet.create({
     },
     progressDot: {
         width: 12, height: 12, borderRadius: 6,
-        backgroundColor: COLORS.bgCardLight,
+        backgroundColor: COLORS.bgInput,
         borderWidth: 2, borderColor: COLORS.border,
     },
     progressActive: {
@@ -170,7 +173,7 @@ const styles = StyleSheet.create({
         textAlign: 'center', marginBottom: SPACING.xs,
     },
     title: {
-        ...FONTS.h1, color: COLORS.white, textAlign: 'center',
+        ...FONTS.h1, color: COLORS.textPrimary, textAlign: 'center',
     },
     subtitle: {
         ...FONTS.caption, color: COLORS.textSecondary,
@@ -184,7 +187,7 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.md,
     },
     cardTitle: {
-        ...FONTS.h3, color: COLORS.white, marginBottom: SPACING.md,
+        ...FONTS.h3, color: COLORS.textPrimary, marginBottom: SPACING.md,
     },
     optionsGrid: { gap: SPACING.sm },
     optionChip: {
@@ -202,7 +205,7 @@ const styles = StyleSheet.create({
     },
     optionLabelActive: { color: COLORS.primaryLight },
     optionDesc: {
-        ...FONTS.caption, color: COLORS.textMuted, marginTop: 2,
+        ...FONTS.caption, color: COLORS.textSecondary, marginTop: 2,
     },
     optionDescActive: { color: COLORS.textSecondary },
     submitButton: {
@@ -213,6 +216,6 @@ const styles = StyleSheet.create({
         marginTop: SPACING.sm,
     },
     submitButtonText: {
-        color: COLORS.white, ...FONTS.bodyBold, fontSize: 17,
+        color: '#FFFFFF', ...FONTS.bodyBold, fontSize: 17,
     },
 });
