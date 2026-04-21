@@ -22,7 +22,7 @@ export default function ConversationsScreen() {
                 .from('conversations')
                 .select('*, profiles!conversations_user1_id_fkey(*), user2:profiles!conversations_user2_id_fkey(*)')
                 .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-                .order('updated_at', { ascending: false });
+                .order('created_at', { ascending: false });
             if (error) throw error;
             setConversations(data || []);
         } catch (error) {

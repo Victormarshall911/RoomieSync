@@ -13,6 +13,12 @@ export interface Profile {
     smoking: 'Yes' | 'No';
     avatar_url?: string;
     is_verified: boolean;
+    searching_for?: 'Looking for Roommate' | 'Listing a Space' | 'Already Matched';
+    has_room_info?: {
+        price?: number;
+        location?: string;
+        description?: string;
+    };
 }
 
 export function calculateMatchPercentage(p1: Profile, p2: Profile): number {

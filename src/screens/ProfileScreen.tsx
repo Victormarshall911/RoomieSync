@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -7,60 +8,19 @@ import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function ProfileScreen() {
     const { user, profile } = useAuth();
+    const navigation = useNavigation<any>();
 
-    const handleLogout = async () => {
-        Alert.alert('Logout', 'Are you sure you want to logout?', [
-            { text: 'Cancel', style: 'cancel' },
-            {
-                text: 'Logout',
-                style: 'destructive',
-                onPress: async () => {
-                    await supabase.auth.signOut();
-                },
-            },
-        ]);
-    };
-
-    const handleDeleteAccount = async () => {
-        Alert.alert(
-            'Delete Account',
-            'This action is permanent and cannot be undone. All your data will be deleted.',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Delete',
-                    style: 'destructive',
-                    onPress: async () => {
-                        try {
-                            // Delete profile data first
-                            const { error: profileError } = await supabase
-                                .from('profiles')
-                                .delete()
-                                .eq('id', user?.id);
-                            if (profileError) throw profileError;
-
-                            // Delete messages
-                            await supabase
-                                .from('messages')
-                                .delete()
-                                .eq('sender_id', user?.id);
-
-                            // Delete conversations
-                            await supabase
-                                .from('conversations')
-                                .delete()
-                                .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`);
-
-                            // Sign out (Supabase auth user deletion requires admin/service role)
-                            await supabase.auth.signOut();
-                            Alert.alert('Done', 'Your account data has been deleted.');
-                        } catch (error: any) {
-                            Alert.alert('Error', error.message);
-                        }
-                    },
-                },
-            ]
-        );
+    const updateStatus = async (status: string) => {
+        try {
+            const { error } = await supabase
+                .from('profiles')
+                .update({ searching_for: status })
+                .eq('id', user?.id);
+            if (error) throw error;
+            Alert.alert('Status Updated', `You are now ${status}`);
+        } catch (error: any) {
+            Alert.alert('Error', error.message);
+        }
     };
 
     const initial = profile?.full_name?.charAt(0) || '?';
@@ -89,6 +49,35 @@ export default function ProfileScreen() {
                     )}
                 </View>
 
+                {/* Status Selection */}
+                <View style={styles.infoCard}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>MY CURRENT STATUS</Text>
+                    </View>
+                    <View style={styles.statusContainer}>
+                        {[
+                            { id: 'Looking for Roommate', label: 'Needs Room', icon: '🔍' },
+                            { id: 'Listing a Space', label: 'Has Space', icon: '🏠' },
+                            { id: 'Already Matched', label: 'Matched', icon: '✅' }
+                        ].map((s) => (
+                            <TouchableOpacity
+                                key={s.id}
+                                style={[
+                                    styles.statusOption,
+                                    profile?.searching_for === s.id && styles.statusOptionActive
+                                ]}
+                                onPress={() => updateStatus(s.id)}
+                            >
+                                <Text style={styles.statusIcon}>{s.icon}</Text>
+                                <Text style={[
+                                    styles.statusLabel,
+                                    profile?.searching_for === s.id && styles.statusLabelActive
+                                ]}>{s.label}</Text>
+                            </TouchableOpacity>
+                        ))}
+                    </View>
+                </View>
+
                 {/* Info Section */}
                 <View style={styles.infoCard}>
                     <View style={styles.sectionHeader}>
@@ -113,6 +102,17 @@ export default function ProfileScreen() {
                                 : undefined
                         }
                     />
+                </View>
+
+                {/* Marketplace Section */}
+                <View style={styles.infoCard}>
+                    <View style={styles.sectionHeader}>
+                        <Text style={styles.sectionTitle}>ROOMMATE MARKETPLACE</Text>
+                        <TouchableOpacity onPress={() => navigation.navigate('CreateListing')}>
+                            <Text style={styles.editButton}>+ New</Text>
+                        </TouchableOpacity>
+                    </View>
+                    <Text style={styles.emptyText}>You haven't posted any rooms or ads yet.</Text>
                 </View>
 
                 {/* Lifestyle Section */}
@@ -221,6 +221,47 @@ const styles = StyleSheet.create({
         fontWeight: '700',
         textTransform: 'uppercase',
         letterSpacing: 0.5,
+    },
+    statusContainer: {
+        flexDirection: 'row',
+        gap: SPACING.sm,
+        marginTop: SPACING.xs,
+    },
+    statusOption: {
+        flex: 1,
+        backgroundColor: 'rgba(255,255,255,0.03)',
+        borderRadius: RADIUS.lg,
+        padding: SPACING.md,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: 'rgba(255,255,255,0.05)',
+    },
+    statusOptionActive: {
+        backgroundColor: COLORS.primaryFaded,
+        borderColor: COLORS.primary,
+    },
+    statusIcon: {
+        fontSize: 20,
+        marginBottom: 4,
+    },
+    statusLabel: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
+        fontWeight: '600',
+    },
+    statusLabelActive: {
+        color: COLORS.primaryLight,
+    },
+    editButton: {
+        ...FONTS.small,
+        color: COLORS.primaryLight,
+        fontWeight: '700',
+    },
+    emptyText: {
+        ...FONTS.body,
+        color: COLORS.textMuted,
+        textAlign: 'center',
+        marginTop: SPACING.md,
     },
     infoCard: {
         marginHorizontal: SPACING.lg,

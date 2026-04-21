@@ -11,6 +11,7 @@ import MainTabs from './MainTabs';
 import ChatScreen from '../screens/ChatScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import VerificationScreen from '../screens/VerificationScreen';
+import CreateListingScreen from '../screens/CreateListingScreen';
 import { Profile } from '../utils/matching';
 
 export type RootStackParamList = {
@@ -22,6 +23,7 @@ export type RootStackParamList = {
     Chat: { conversationId: string; otherUser: Profile };
     Profile: undefined;
     Verify: undefined;
+    CreateListing: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -54,6 +56,7 @@ export default function AppNavigator() {
                         <Stack.Screen name="Chat" component={ChatScreen} />
                         <Stack.Screen name="Profile" component={ProfileScreen} />
                         <Stack.Screen name="Verify" component={VerificationScreen} />
+                        <Stack.Screen name="CreateListing" component={CreateListingScreen} />
                     </>
                 )}
             </Stack.Navigator>
