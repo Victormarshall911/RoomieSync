@@ -9,6 +9,8 @@ import PreferencesScreen from '../screens/PreferencesScreen';
 import LifestyleSurveyScreen from '../screens/LifestyleSurveyScreen';
 import MainTabs from './MainTabs';
 import ChatScreen from '../screens/ChatScreen';
+import ProfileScreen from '../screens/ProfileScreen';
+import VerificationScreen from '../screens/VerificationScreen';
 import { Profile } from '../utils/matching';
 
 export type RootStackParamList = {
@@ -18,6 +20,8 @@ export type RootStackParamList = {
     LifestyleSurvey: undefined;
     Main: undefined;
     Chat: { conversationId: string; otherUser: Profile };
+    Profile: undefined;
+    Verify: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -48,6 +52,8 @@ export default function AppNavigator() {
                     <>
                         <Stack.Screen name="Main" component={MainTabs} />
                         <Stack.Screen name="Chat" component={ChatScreen} />
+                        <Stack.Screen name="Profile" component={ProfileScreen} />
+                        <Stack.Screen name="Verify" component={VerificationScreen} />
                     </>
                 )}
             </Stack.Navigator>

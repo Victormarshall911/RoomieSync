@@ -1,11 +1,13 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Alert, ScrollView } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 export default function SettingsScreen() {
     const { user } = useAuth();
+    const navigation = useNavigation<any>();
 
     const handleLogout = async () => {
         Alert.alert('Logout', 'Are you sure you want to logout?', [
@@ -73,6 +75,14 @@ export default function SettingsScreen() {
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>ACCOUNT</Text>
+
+                    <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={() => navigation.navigate('Verify')}>
+                        <View style={styles.itemContent}>
+                            <Text style={styles.itemTitle}>Verify Identity</Text>
+                            <Text style={styles.itemSubtitle}>Upload ID to get verified badge</Text>
+                        </View>
+                        <Text style={styles.itemIcon}>→</Text>
+                    </TouchableOpacity>
 
                     <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={handleLogout}>
                         <View style={styles.itemContent}>

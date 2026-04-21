@@ -23,20 +23,29 @@ export default function MainTabs() {
                 tabBarActiveTintColor: COLORS.primaryLight,
                 tabBarInactiveTintColor: COLORS.textMuted,
                 tabBarStyle: {
-                    backgroundColor: COLORS.bgCard,
-                    borderTopColor: COLORS.border,
-                    borderTopWidth: 1,
-                    paddingBottom: 24,
-                    paddingTop: 12,
-                    height: 88,
-                    elevation: 0,
-                    shadowOpacity: 0,
+                    position: 'absolute',
+                    bottom: 24,
+                    left: 40,
+                    right: 40,
+                    backgroundColor: 'rgba(26, 23, 43, 0.98)',
+                    borderRadius: 32,
+                    height: 64,
+                    borderTopWidth: 0,
+                    elevation: 12,
+                    shadowColor: '#000',
+                    shadowOffset: { width: 0, height: 4 },
+                    shadowOpacity: 0.3,
+                    shadowRadius: 8,
                 },
                 tabBarLabelStyle: {
-                    fontSize: 10,
-                    fontWeight: '600',
+                    fontSize: 9,
+                    fontWeight: '700',
                     letterSpacing: 0.3,
-                    marginTop: 4,
+                    marginBottom: 10,
+                    marginTop: -6,
+                },
+                tabBarIconStyle: {
+                    marginTop: 8,
                 },
                 tabBarIcon: ({ focused, color, size }) => {
                     let iconName: any;
@@ -45,17 +54,13 @@ export default function MainTabs() {
                         iconName = focused ? 'search' : 'search-outline';
                     } else if (route.name === 'Messages') {
                         iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
-                    } else if (route.name === 'Profile') {
-                        iconName = focused ? 'person' : 'person-outline';
                     } else if (route.name === 'Settings') {
                         iconName = focused ? 'settings' : 'settings-outline';
-                    } else if (route.name === 'Verify') {
-                        iconName = focused ? 'checkmark-circle' : 'checkmark-circle-outline';
                     } else if (route.name === 'Admin') {
                         iconName = focused ? 'shield-checkmark' : 'shield-checkmark-outline';
                     }
 
-                    return <Ionicons name={iconName} size={size - 2} color={color} />;
+                    return <Ionicons name={iconName} size={size - 4} color={color} />;
                 },
             })}
         >
@@ -70,19 +75,9 @@ export default function MainTabs() {
                 options={{ tabBarLabel: 'Chats' }}
             />
             <Tab.Screen
-                name="Profile"
-                component={ProfileScreen}
-                options={{ tabBarLabel: 'Profile' }}
-            />
-            <Tab.Screen
                 name="Settings"
                 component={SettingsScreen}
                 options={{ tabBarLabel: 'Settings' }}
-            />
-            <Tab.Screen
-                name="Verify"
-                component={VerificationScreen}
-                options={{ tabBarLabel: 'Verify' }}
             />
             {profile?.is_admin && (
                 <Tab.Screen
