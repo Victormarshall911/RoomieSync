@@ -1,4 +1,10 @@
 {
-  "compilerOptions": {},
+  "compilerOptions": {
+    "types": [
+      "jest",
+      "node"
+    ],
+    "skipLibCheck": true
+  },
   "extends": "expo/tsconfig.base"
 }

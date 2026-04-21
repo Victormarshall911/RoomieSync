@@ -1,69 +1,126 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput } from 'react-native';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { calculateMatchPercentage } from '../utils/matching';
+import { calculateMatchPercentage, Profile } from '../utils/matching';
 import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+
+const PAGE_SIZE = 10;
 
 export default function DiscoveryScreen() {
     const { user, profile } = useAuth();
-    const navigation = useNavigation();
-    const [profiles, setProfiles] = useState<any[]>([]);
+    const navigation = useNavigation<any>();
+    const [profiles, setProfiles] = useState<Profile[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
+    const [loadingMore, setLoadingMore] = useState(false);
+    const [hasMore, setHasMore] = useState(true);
     const [genderFilter, setGenderFilter] = useState<string | null>(null);
     const [searchText, setSearchText] = useState('');
+    const [error, setError] = useState<string | null>(null);
 
-    const fetchProfiles = useCallback(async () => {
+    const pageRef = useRef(0);
+
+    const fetchProfiles = useCallback(async (isRefreshing = false) => {
+        if (!user) return;
+
         try {
-            let query = supabase.from('profiles').select('*').neq('id', user?.id);
+            setError(null);
+            if (isRefreshing) {
+                setRefreshing(true);
+                pageRef.current = 0;
+            } else if (pageRef.current > 0) {
+                setLoadingMore(true);
+            }
+
+            const from = pageRef.current * PAGE_SIZE;
+            const to = from + PAGE_SIZE - 1;
+
+            let query = supabase
+                .from('profiles')
+                .select('*')
+                .neq('id', user.id)
+                .range(from, to)
+                .order('created_at', { ascending: false });
+
             if (genderFilter) query = query.eq('gender', genderFilter);
-            const { data, error } = await query;
-            if (error) throw error;
-            setProfiles(data || []);
-        } catch (error) {
-            console.error(error);
+
+            const { data, error: fetchError } = await query;
+
+            if (fetchError) throw fetchError;
+
+            const newProfiles = (data || []) as Profile[];
+
+            if (isRefreshing) {
+                setProfiles(newProfiles);
+            } else {
+                setProfiles(prev => [...prev, ...newProfiles]);
+            }
+
+            setHasMore(newProfiles.length === PAGE_SIZE);
+            pageRef.current += 1;
+        } catch (err: any) {
+            console.error('Error fetching profiles:', err);
+            setError('Failed to load profiles. Please try again.');
         } finally {
             setLoading(false);
+            setRefreshing(false);
+            setLoadingMore(false);
         }
     }, [genderFilter, user]);
 
     useEffect(() => {
-        fetchProfiles();
-    }, [fetchProfiles]);
+        fetchProfiles(true);
+    }, [genderFilter]);
 
-    const handleChat = async (otherProfile: any) => {
+    const handleRefresh = () => {
+        fetchProfiles(true);
+    };
+
+    const handleLoadMore = () => {
+        if (!loadingMore && hasMore && !loading) {
+            fetchProfiles();
+        }
+    };
+
+    const handleChat = async (otherProfile: Profile) => {
+        if (!user) return;
+
         try {
-            const { data: existingConvos } = await supabase
+            setLoading(true);
+            const { data: existingConvos, error: convoError } = await supabase
                 .from('conversations')
                 .select('*')
-                .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`);
+                .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherProfile.id}),and(user1_id.eq.${otherProfile.id},user2_id.eq.${user.id})`)
+                .maybeSingle();
 
-            const existing = existingConvos?.find(
-                (c: any) =>
-                    (c.user1_id === user?.id && c.user2_id === otherProfile.id) ||
-                    (c.user1_id === otherProfile.id && c.user2_id === user?.id)
-            );
+            if (convoError) throw convoError;
 
-            if (existing) {
-                (navigation as any).navigate('Chat', { conversationId: existing.id, otherUser: otherProfile });
+            if (existingConvos) {
+                navigation.navigate('Chat', { conversationId: existingConvos.id, otherUser: otherProfile });
             } else {
-                const { data, error } = await supabase
+                const { data, error: insertError } = await supabase
                     .from('conversations')
-                    .insert({ user1_id: user?.id, user2_id: otherProfile.id })
+                    .insert({ user1_id: user.id, user2_id: otherProfile.id })
                     .select()
                     .single();
-                if (error) throw error;
-                (navigation as any).navigate('Chat', { conversationId: data.id, otherUser: otherProfile });
+                if (insertError) throw insertError;
+                navigation.navigate('Chat', { conversationId: data.id, otherUser: otherProfile });
             }
-        } catch (error) {
-            console.error(error);
+        } catch (err: any) {
+            console.error('Error handling chat navigation:', err);
+            setError('Could not start conversation. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
 
     const filteredProfiles = profiles.filter(p =>
-        searchText === '' || p.full_name?.toLowerCase().includes(searchText.toLowerCase()) ||
+        searchText === '' ||
+        p.full_name?.toLowerCase().includes(searchText.toLowerCase()) ||
         p.university?.toLowerCase().includes(searchText.toLowerCase())
     );
 
@@ -74,8 +131,8 @@ export default function DiscoveryScreen() {
         return COLORS.textMuted;
     };
 
-    const renderItem = ({ item }: any) => {
-        const matchPct = profile ? calculateMatchPercentage(profile, item) : 0;
+    const renderItem = ({ item }: { item: Profile }) => {
+        const matchPct = profile ? calculateMatchPercentage(profile as Profile, item) : 0;
         const matchColor = getMatchColor(matchPct);
 
         return (
@@ -88,9 +145,9 @@ export default function DiscoveryScreen() {
                         <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
                     </View>
                 </View>
-                <Text style={styles.name}>{item.full_name}</Text>
-                <Text style={styles.uniTag}>{item.university}</Text>
-                <Text style={styles.deptTag}>{item.department}</Text>
+                <Text style={styles.name} numberOfLines={1}>{item.full_name}</Text>
+                <Text style={styles.uniTag} numberOfLines={1}>{item.university}</Text>
+                <Text style={styles.deptTag} numberOfLines={1}>{item.department}</Text>
 
                 <View style={styles.tagsRow}>
                     {item.is_verified && (
@@ -99,7 +156,7 @@ export default function DiscoveryScreen() {
                         </View>
                     )}
                     <View style={styles.budgetTag}>
-                        <Text style={styles.budgetTagText}>₦{(item.budget_min / 1000).toFixed(0)}k</Text>
+                        <Text style={styles.budgetTagText}>₦{((item.budget_min || 0) / 1000).toFixed(0)}k</Text>
                     </View>
                 </View>
 
@@ -110,7 +167,16 @@ export default function DiscoveryScreen() {
         );
     };
 
-    if (loading) {
+    const renderFooter = () => {
+        if (!loadingMore) return null;
+        return (
+            <View style={styles.footerLoading}>
+                <ActivityIndicator color={COLORS.primary} />
+            </View>
+        );
+    };
+
+    if (loading && !refreshing && profiles.length === 0) {
         return (
             <View style={[styles.container, styles.centered]}>
                 <ActivityIndicator size="large" color={COLORS.primary} />
@@ -122,17 +188,39 @@ export default function DiscoveryScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Discover</Text>
-                <Text style={styles.headerSubtitle}>{filteredProfiles.length} potential roommates</Text>
+                <View style={styles.headerTop}>
+                    <View>
+                        <Text style={styles.headerTitle}>Discover</Text>
+                        <Text style={styles.headerSubtitle}>
+                            {searchText ? `Found ${filteredProfiles.length} matches` : 'Find your perfect roommate'}
+                        </Text>
+                    </View>
+                    <TouchableOpacity
+                        style={styles.profileButton}
+                        onPress={() => navigation.navigate('Profile')}
+                        activeOpacity={0.7}
+                    >
+                        <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.profileIconGradient}>
+                            <Ionicons name="person" size={20} color={COLORS.white} />
+                        </LinearGradient>
+                    </TouchableOpacity>
+                </View>
             </View>
+
+            {/* Error Message */}
+            {error && (
+                <View style={styles.errorBanner}>
+                    <Text style={styles.errorText}>{error}</Text>
+                </View>
+            )}
 
             {/* Search */}
             <View style={styles.searchContainer}>
                 <View style={styles.searchWrapper}>
-                    <Text style={styles.searchIcon}>🔍</Text>
+                    <Ionicons name="search" size={18} color={COLORS.textMuted} style={styles.searchIcon} />
                     <TextInput
                         style={styles.searchInput}
-                        placeholder="Search by name or uni..."
+                        placeholder="Search by name or university..."
                         placeholderTextColor={COLORS.textMuted}
                         value={searchText}
                         onChangeText={setSearchText}
@@ -163,10 +251,23 @@ export default function DiscoveryScreen() {
                 columnWrapperStyle={styles.row}
                 contentContainerStyle={styles.list}
                 showsVerticalScrollIndicator={false}
+                onEndReached={handleLoadMore}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={renderFooter}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={handleRefresh}
+                        tintColor={COLORS.primary}
+                        colors={[COLORS.primary]}
+                    />
+                }
                 ListEmptyComponent={
-                    <View style={styles.centered}>
-                        <Text style={styles.emptyText}>No roommates found.</Text>
-                    </View>
+                    !loading && (
+                        <View style={styles.centered}>
+                            <Text style={styles.emptyText}>No roommates found.</Text>
+                        </View>
+                    )
                 }
             />
         </View>
@@ -189,6 +290,11 @@ const styles = StyleSheet.create({
         paddingHorizontal: SPACING.lg,
         paddingBottom: SPACING.md,
     },
+    headerTop: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
     headerTitle: {
         ...FONTS.h1,
         color: COLORS.white,
@@ -197,6 +303,32 @@ const styles = StyleSheet.create({
         ...FONTS.caption,
         color: COLORS.textSecondary,
         marginTop: 2,
+    },
+    profileButton: {
+        ...SHADOWS.button,
+    },
+    profileIconGradient: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: 'rgba(255,255,255,0.1)',
+    },
+    errorBanner: {
+        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        marginHorizontal: SPACING.lg,
+        padding: SPACING.sm,
+        borderRadius: RADIUS.md,
+        borderWidth: 1,
+        borderColor: 'rgba(239, 68, 68, 0.2)',
+        marginBottom: SPACING.md,
+    },
+    errorText: {
+        color: '#f87171',
+        ...FONTS.small,
+        textAlign: 'center',
     },
     searchContainer: {
         paddingHorizontal: SPACING.lg,
@@ -228,8 +360,8 @@ const styles = StyleSheet.create({
         marginBottom: SPACING.md,
     },
     filterChip: {
-        paddingVertical: SPACING.sm,
-        paddingHorizontal: SPACING.md,
+        paddingVertical: 8,
+        paddingHorizontal: 16,
         borderRadius: RADIUS.full,
         backgroundColor: COLORS.bgCard,
         borderWidth: 1,
@@ -248,18 +380,17 @@ const styles = StyleSheet.create({
     },
     list: {
         paddingHorizontal: SPACING.md,
-        paddingBottom: 100,
+        paddingBottom: 40,
     },
     row: {
         justifyContent: 'space-between',
         marginBottom: SPACING.md,
     },
     card: {
-        flex: 1,
+        width: '48.5%',
         backgroundColor: COLORS.bgCard,
         borderRadius: RADIUS.xl,
         padding: SPACING.md,
-        marginHorizontal: SPACING.xs,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
@@ -339,6 +470,10 @@ const styles = StyleSheet.create({
         ...FONTS.caption,
         color: COLORS.primaryLight,
         fontWeight: '700',
+    },
+    footerLoading: {
+        paddingVertical: SPACING.md,
+        alignItems: 'center',
     },
     emptyText: {
         ...FONTS.body,

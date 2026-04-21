@@ -9,23 +9,33 @@ import PreferencesScreen from '../screens/PreferencesScreen';
 import LifestyleSurveyScreen from '../screens/LifestyleSurveyScreen';
 import MainTabs from './MainTabs';
 import ChatScreen from '../screens/ChatScreen';
+import { Profile } from '../utils/matching';
 
-const Stack = createStackNavigator();
+export type RootStackParamList = {
+    Auth: undefined;
+    ProfileSetup: undefined;
+    Preferences: undefined;
+    LifestyleSurvey: undefined;
+    Main: undefined;
+    Chat: { conversationId: string; otherUser: Profile };
+};
+
+const Stack = createStackNavigator<RootStackParamList>();
 
 export default function AppNavigator() {
     const { session, profile, loading } = useAuth();
 
     if (loading) {
         return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-                <ActivityIndicator size="large" color="#4F46E5" />
+            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0F0F1A' }}>
+                <ActivityIndicator size="large" color="#6C3AED" />
             </View>
         );
     }
 
     return (
         <NavigationContainer>
-            <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
                 {!session ? (
                     <Stack.Screen name="Auth" component={AuthScreen} />
                 ) : !profile ? (
