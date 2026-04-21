@@ -4,6 +4,7 @@
 -- 1. Add missing columns to profiles
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS searching_for TEXT DEFAULT 'Looking for Roommate';
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS has_room_info JSONB;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS push_token TEXT;
 
 -- 2. Create the Listings Table
 CREATE TABLE IF NOT EXISTS listings (

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { registerForPushNotificationsAsync, savePushToken } from '../hooks/useNotifications';
 
 interface AuthContextType {
     session: Session | null;
@@ -48,7 +49,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 .eq('id', userId)
                 .single();
 
-            if (data) setProfile(data);
+            if (data) {
+                setProfile(data);
+                // Register for push notifications
+                const token = await registerForPushNotificationsAsync();
+                if (token) {
+                    await savePushToken(userId, token);
+                }
+            }
         } catch (error) {
             console.error('Error fetching profile:', error);
         }

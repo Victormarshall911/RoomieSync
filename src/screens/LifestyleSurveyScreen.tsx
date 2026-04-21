@@ -8,35 +8,33 @@ import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 const LIFESTYLE_OPTIONS = {
-    sleep_schedule: {
+    sleep_habit: {
         label: '😴 Sleep Schedule',
         options: [
-            { value: 1, label: 'Early Bird', desc: 'Asleep by 10PM' },
-            { value: 2, label: 'Moderate', desc: 'Asleep by midnight' },
-            { value: 3, label: 'Night Owl', desc: 'Up past 1AM' },
+            { value: 'Early Bird', label: 'Early Bird', desc: 'Asleep by 10PM' },
+            { value: 'Night Owl', label: 'Night Owl', desc: 'Up past 1AM' },
         ],
     },
     cleanliness: {
         label: '🧹 Cleanliness',
         options: [
-            { value: 1, label: 'Very Tidy', desc: 'Spotless at all times' },
-            { value: 2, label: 'Average', desc: 'Reasonable upkeep' },
-            { value: 3, label: 'Relaxed', desc: 'Lived-in feel' },
+            { value: 2, label: 'Tidy', desc: 'Keep it clean' },
+            { value: 7, label: 'Very Clean', desc: 'Spotless always' },
+            { value: 10, label: 'Professional', desc: 'Surgical clean' },
         ],
     },
-    social_level: {
+    socializing: {
         label: '🎉 Social Level',
         options: [
-            { value: 1, label: 'Quiet', desc: 'Prefer peace & quiet' },
-            { value: 2, label: 'Balanced', desc: 'Some friends over' },
-            { value: 3, label: 'Social', desc: 'Love having guests' },
+            { value: 'Rarely', label: 'Quiet', desc: 'Prefer peace & quiet' },
+            { value: 'Guests often', label: 'Social', desc: 'Love having guests' },
         ],
     },
     smoking: {
         label: '🚭 Smoking',
         options: [
-            { value: 0, label: 'No', desc: "Don't smoke" },
-            { value: 1, label: 'Yes', desc: 'Smoke regularly' },
+            { value: 'No', label: 'No', desc: "Don't smoke" },
+            { value: 'Yes', label: 'Yes', desc: 'Smoke regularly' },
         ],
     },
 };
@@ -49,12 +47,12 @@ export default function LifestyleSurveyScreen() {
     // @ts-ignore
     const { profileData } = route.params;
 
-    const [selections, setSelections] = useState<Record<string, number>>({});
+    const [selections, setSelections] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(false);
 
     const allSelected = Object.keys(LIFESTYLE_OPTIONS).every((k) => selections[k] !== undefined);
 
-    const handleSelect = (category: string, value: number) => {
+    const handleSelect = (category: string, value: any) => {
         setSelections((prev) => ({ ...prev, [category]: value }));
     };
 
@@ -74,9 +72,9 @@ export default function LifestyleSurveyScreen() {
                 budget_min: profileData.budgetMin,
                 budget_max: profileData.budgetMax,
                 location_preference: profileData.locationPreference,
-                sleep_schedule: selections.sleep_schedule,
+                sleep_habit: selections.sleep_habit,
                 cleanliness: selections.cleanliness,
-                social_level: selections.social_level,
+                socializing: selections.socializing,
                 smoking: selections.smoking,
             });
             if (error) throw error;

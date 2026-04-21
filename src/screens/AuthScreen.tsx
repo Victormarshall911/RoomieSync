@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
@@ -41,69 +41,76 @@ export default function AuthScreen() {
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
             >
-                {/* Logo / Branding */}
-                <View style={styles.brandContainer}>
-                    <LinearGradient colors={COLORS.gradientPrimary} style={styles.logoBadge}>
-                        <Text style={styles.logoIcon}>🏠</Text>
-                    </LinearGradient>
-                    <Text style={styles.title}>RoomieSync</Text>
-                    <Text style={styles.subtitle}>Find your perfect roommate match</Text>
-                </View>
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
+                >
+                    {/* Logo / Branding */}
+                    <View style={styles.brandContainer}>
+                        <Image
+                            source={require('../../assets/icon.png')}
+                            style={styles.logoImage}
+                        />
+                        <Text style={styles.title}>RoomieSync</Text>
+                        <Text style={styles.subtitle}>Find your perfect roommate match</Text>
+                    </View>
 
-                {/* Auth Card */}
-                <View style={styles.card}>
-                    <Text style={styles.cardTitle}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
+                    {/* Auth Card */}
+                    <View style={styles.card}>
+                        <Text style={styles.cardTitle}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Email</Text>
-                        <View style={styles.inputWrapper}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="you@university.edu"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={email}
-                                onChangeText={setEmail}
-                                autoCapitalize="none"
-                                keyboardType="email-address"
-                            />
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Email</Text>
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="you@university.edu"
+                                    placeholderTextColor={COLORS.textMuted}
+                                    value={email}
+                                    onChangeText={setEmail}
+                                    autoCapitalize="none"
+                                    keyboardType="email-address"
+                                />
+                            </View>
                         </View>
-                    </View>
 
-                    <View style={styles.inputContainer}>
-                        <Text style={styles.inputLabel}>Password</Text>
-                        <View style={styles.inputWrapper}>
-                            <TextInput
-                                style={styles.input}
-                                placeholder="Enter your password"
-                                placeholderTextColor={COLORS.textMuted}
-                                value={password}
-                                onChangeText={setPassword}
-                                secureTextEntry
-                            />
+                        <View style={styles.inputContainer}>
+                            <Text style={styles.inputLabel}>Password</Text>
+                            <View style={styles.inputWrapper}>
+                                <TextInput
+                                    style={styles.input}
+                                    placeholder="Enter your password"
+                                    placeholderTextColor={COLORS.textMuted}
+                                    value={password}
+                                    onChangeText={setPassword}
+                                    secureTextEntry
+                                />
+                            </View>
                         </View>
+
+                        <TouchableOpacity onPress={handleAuth} disabled={loading} activeOpacity={0.85}>
+                            <LinearGradient colors={COLORS.gradientPrimary} style={styles.button}>
+                                {loading ? <ActivityIndicator color="#fff" /> : (
+                                    <Text style={styles.buttonText}>{isSignUp ? 'Sign Up' : 'Login'}</Text>
+                                )}
+                            </LinearGradient>
+                        </TouchableOpacity>
+
+                        <View style={styles.dividerRow}>
+                            <View style={styles.divider} />
+                            <Text style={styles.dividerText}>or</Text>
+                            <View style={styles.divider} />
+                        </View>
+
+                        <TouchableOpacity style={styles.toggleButton} onPress={() => setIsSignUp(!isSignUp)}>
+                            <Text style={styles.toggleText}>
+                                {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
+                                <Text style={styles.toggleHighlight}>{isSignUp ? 'Login' : 'Sign Up'}</Text>
+                            </Text>
+                        </TouchableOpacity>
                     </View>
-
-                    <TouchableOpacity onPress={handleAuth} disabled={loading} activeOpacity={0.85}>
-                        <LinearGradient colors={COLORS.gradientPrimary} style={styles.button}>
-                            {loading ? <ActivityIndicator color="#fff" /> : (
-                                <Text style={styles.buttonText}>{isSignUp ? 'Sign Up' : 'Login'}</Text>
-                            )}
-                        </LinearGradient>
-                    </TouchableOpacity>
-
-                    <View style={styles.dividerRow}>
-                        <View style={styles.divider} />
-                        <Text style={styles.dividerText}>or</Text>
-                        <View style={styles.divider} />
-                    </View>
-
-                    <TouchableOpacity style={styles.toggleButton} onPress={() => setIsSignUp(!isSignUp)}>
-                        <Text style={styles.toggleText}>
-                            {isSignUp ? 'Already have an account? ' : "Don't have an account? "}
-                            <Text style={styles.toggleHighlight}>{isSignUp ? 'Login' : 'Sign Up'}</Text>
-                        </Text>
-                    </TouchableOpacity>
-                </View>
+                </ScrollView>
             </KeyboardAvoidingView>
         </LinearGradient>
     );
@@ -115,24 +122,23 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     keyboardView: {
         flex: 1,
+    },
+    scrollContent: {
+        flexGrow: 1,
         justifyContent: 'center',
         padding: SPACING.lg,
+        paddingTop: 60,
+        paddingBottom: 40,
     },
     brandContainer: {
         alignItems: 'center',
         marginBottom: SPACING.xl,
     },
-    logoBadge: {
-        width: 64,
-        height: 64,
+    logoImage: {
+        width: 80,
+        height: 80,
         borderRadius: RADIUS.xl,
-        alignItems: 'center',
-        justifyContent: 'center',
         marginBottom: SPACING.md,
-        ...SHADOWS.button,
-    },
-    logoIcon: {
-        fontSize: 28,
     },
     title: {
         ...FONTS.h1,

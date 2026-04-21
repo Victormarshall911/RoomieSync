@@ -2,7 +2,7 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
-import { View, ActivityIndicator } from 'react-native';
+import { View, ActivityIndicator, Image } from 'react-native';
 import AuthScreen from '../screens/AuthScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import PreferencesScreen from '../screens/PreferencesScreen';
@@ -36,7 +36,11 @@ export default function AppNavigator() {
     if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
+                <Image
+                    source={require('../../assets/icon.png')}
+                    style={{ width: 80, height: 80, borderRadius: 20, marginBottom: 20 }}
+                />
+                <ActivityIndicator size="small" color={COLORS.primary} />
             </View>
         );
     }

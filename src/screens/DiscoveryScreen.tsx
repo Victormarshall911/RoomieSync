@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl, Image } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -217,11 +217,17 @@ export default function DiscoveryScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerTop}>
-                    <View>
-                        <Text style={styles.headerTitle}>Discover</Text>
-                        <Text style={styles.headerSubtitle}>
-                            {searchText ? `Found ${filteredListings.length} matches` : 'Find your perfect roommate or space'}
-                        </Text>
+                    <View style={styles.headerInfo}>
+                        <Image
+                            source={require('../../assets/icon.png')}
+                            style={styles.headerLogo}
+                        />
+                        <View>
+                            <Text style={styles.headerTitle}>Discover</Text>
+                            <Text style={styles.headerSubtitle}>
+                                {searchText ? `Found ${filteredListings.length} matches` : 'Find your perfect roommate'}
+                            </Text>
+                        </View>
                     </View>
                     <TouchableOpacity
                         style={styles.profileShortcut}
@@ -335,6 +341,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+    },
+    headerInfo: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: SPACING.md,
+    },
+    headerLogo: {
+        width: 44,
+        height: 44,
+        borderRadius: RADIUS.md,
     },
     headerTitle: {
         ...FONTS.h1,
