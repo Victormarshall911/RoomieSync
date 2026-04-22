@@ -89,7 +89,7 @@ export default function LifestyleSurveyScreen() {
     return (
         <LinearGradient colors={isDark ? [COLORS.bg, '#16132B'] : [COLORS.bg, '#F1F5F9']} style={styles.container}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
-                {/* Progress */}
+
                 <View style={styles.progressRow}>
                     <View style={[styles.progressDot, styles.progressDone]} />
                     <View style={[styles.progressLine, styles.progressLineDone]} />
