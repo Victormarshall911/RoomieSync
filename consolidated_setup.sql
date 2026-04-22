@@ -1,12 +1,7 @@
--- Consolidated Setup for RoomieSync Marketplace
--- Instructions: Run this in your Supabase SQL Editor.
-
--- 1. Add missing columns to profiles
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS searching_for TEXT DEFAULT 'Looking for Roommate';
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS has_room_info JSONB;
 ALTER TABLE profiles ADD COLUMN IF NOT EXISTS push_token TEXT;
 
--- 2. Create the Listings Table
 CREATE TABLE IF NOT EXISTS listings (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     user_id UUID REFERENCES profiles(id) ON DELETE CASCADE,
@@ -21,7 +16,6 @@ CREATE TABLE IF NOT EXISTS listings (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- 3. Enable RLS for Listings
 ALTER TABLE listings ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Listings are viewable by everyone" 
