@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, FlatList, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
+import { Image } from 'expo-image';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -48,49 +49,14 @@ export default function AdminScreen() {
         }
     };
 
-    const renderItem = ({ item }: { item: any }) => {
-        const [imageUrl, setImageUrl] = useState<string | null>(null);
-
-        useEffect(() => {
-            async function getImageUrl() {
-                const { data } = await supabase.storage
-                    .from('student-ids')
-                    .createSignedUrl(item.school_id_url, 60);
-                if (data) setImageUrl(data.signedUrl);
-            }
-            getImageUrl();
-        }, []);
-
-        return (
-            <View style={styles.card}>
-                <View style={styles.cardHeader}>
-                    <LinearGradient colors={[COLORS.accent, COLORS.accentLight]} style={styles.avatar}>
-                        <Text style={styles.avatarText}>{item.full_name?.charAt(0)}</Text>
-                    </LinearGradient>
-                    <View style={styles.cardHeaderInfo}>
-                        <Text style={styles.name}>{item.full_name}</Text>
-                        <Text style={styles.detail}>{item.university} · {item.department}</Text>
-                    </View>
-                </View>
-
-                {imageUrl ? (
-                    <Image source={{ uri: imageUrl }} style={styles.idPhoto} resizeMode="contain" />
-                ) : (
-                    <View style={[styles.idPhoto, styles.idPhotoLoading]}>
-                        <ActivityIndicator size="small" color={COLORS.primary} />
-                    </View>
-                )}
-
-                <View style={styles.cardActions}>
-                    <TouchableOpacity onPress={() => handleVerify(item.id)} activeOpacity={0.85}>
-                        <LinearGradient colors={[COLORS.success, '#34D399']} style={styles.approveButton}>
-                            <Text style={styles.approveButtonText}>✓ Approve & Verify</Text>
-                        </LinearGradient>
-                    </TouchableOpacity>
-                </View>
-            </View>
-        );
-    };
+    const renderItem = ({ item }: { item: any }) => (
+        <VerificationCard
+            item={item}
+            handleVerify={handleVerify}
+            COLORS={COLORS}
+            styles={styles}
+        />
+    );
 
     if (loading) {
         return (
@@ -123,6 +89,74 @@ export default function AdminScreen() {
                     </View>
                 }
             />
+        </View>
+    );
+}
+
+function VerificationCard({ item, handleVerify, COLORS, styles }: any) {
+    const [imageUrl, setImageUrl] = useState<string | null>(null);
+
+    useEffect(() => {
+        async function getImageUrl() {
+            try {
+                console.log('Fetching signed URL for:', item.school_id_url);
+                const { data, error } = await supabase.storage
+                    .from('student-ids')
+                    .createSignedUrl(item.school_id_url, 60);
+
+                if (error) {
+                    console.error('Error creating signed URL:', error);
+                    return;
+                }
+
+                if (data) {
+                    console.log('Successfully got signed URL. Length:', data.signedUrl.length);
+                    setImageUrl(data.signedUrl);
+                }
+            } catch (err) {
+                console.error('Unexpected error in getImageUrl:', err);
+            }
+        }
+        if (item.school_id_url) {
+            getImageUrl();
+        }
+    }, [item.school_id_url]);
+
+    return (
+        <View style={styles.card}>
+            <View style={styles.cardHeader}>
+                <LinearGradient colors={[COLORS.accent, COLORS.accentLight]} style={styles.avatar}>
+                    <Text style={styles.avatarText}>{item.full_name?.charAt(0)}</Text>
+                </LinearGradient>
+                <View style={styles.cardHeaderInfo}>
+                    <Text style={styles.name}>{item.full_name}</Text>
+                    <Text style={styles.detail}>{item.university} · {item.department}</Text>
+                </View>
+            </View>
+
+            {imageUrl ? (
+                <View style={styles.idPhoto}>
+                    <Image
+                        source={{ uri: imageUrl }}
+                        style={{ width: '100%', height: '100%' }}
+                        contentFit="contain"
+                        transition={200}
+                        onError={(e) => console.error('Expo Image error:', e.error)}
+                    />
+                </View>
+            ) : (
+                <View style={[styles.idPhoto, styles.idPhotoLoading]}>
+                    <ActivityIndicator size="small" color={COLORS.primary} />
+                </View>
+            )}
+
+            <View style={styles.cardActions}>
+                <TouchableOpacity onPress={() => handleVerify(item.id)} activeOpacity={0.85}>
+                    <LinearGradient colors={[COLORS.success, '#34D399']} style={styles.approveButton}>
+                        <Text style={styles.approveButtonText}>✓ Approve & Verify</Text>
+                    </LinearGradient>
+                </TouchableOpacity>
+            </View>
         </View>
     );
 }

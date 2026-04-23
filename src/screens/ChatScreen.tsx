@@ -76,15 +76,28 @@ export default function ChatScreen() {
             }
         }
 
-        const { error: msgError } = await supabase.from('messages').insert({
-            conversation_id: currentConvoId,
-            sender_id: user.id,
-            content: msg,
-        });
+        const { data: insertedMsg, error: msgError } = await supabase
+            .from('messages')
+            .insert({
+                conversation_id: currentConvoId,
+                sender_id: user.id,
+                content: msg,
+            })
+            .select()
+            .single();
 
         if (msgError) {
             console.error('Error sending message:', msgError);
             return;
+        }
+
+        // Manually add the message to the state to ensure immediate feedback
+        if (insertedMsg) {
+            setMessages((prev) => {
+                const exists = prev.find(m => m.id === insertedMsg.id);
+                if (exists) return prev;
+                return [...prev, insertedMsg];
+            });
         }
 
         // Optional: manually refresh or let subscription handle it

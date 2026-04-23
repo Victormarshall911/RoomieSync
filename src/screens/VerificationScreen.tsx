@@ -33,13 +33,17 @@ export default function VerificationScreen() {
         try {
             const response = await fetch(image);
             const blob = await response.blob();
+            console.log('Upload blob check:', { size: blob.size, type: blob.type });
             const fileExt = image.split('.').pop();
-            const fileName = `${user?.id}.${fileExt}`;
-            const filePath = `student-ids/${fileName}`;
+            const fileName = `letter.${fileExt}`;
+            const filePath = `${user?.id}/${fileName}`;
 
             const { error: uploadError } = await supabase.storage
                 .from('student-ids')
-                .upload(filePath, blob, { upsert: true });
+                .upload(filePath, blob, {
+                    upsert: true,
+                    contentType: blob.type || `image/${fileExt === 'pdf' ? 'pdf' : 'jpeg'}`
+                });
 
             if (uploadError) throw uploadError;
 
@@ -74,6 +78,36 @@ export default function VerificationScreen() {
                         <Text style={styles.statusEmoji}>✅</Text>
                         <Text style={styles.statusTitle}>Verified Student</Text>
                         <Text style={styles.statusDesc}>Your identity has been confirmed</Text>
+                    </LinearGradient>
+                ) : profile?.school_id_url ? (
+                    <LinearGradient colors={[`${COLORS.accent}20`, `${COLORS.accent}08`]} style={[styles.statusBanner, { borderColor: `${COLORS.accent}30` }]}>
+                        <Text style={styles.statusEmoji}>⏳</Text>
+                        <Text style={styles.statusTitle}>Verification Pending</Text>
+                        <Text style={styles.statusDesc}>We're reviewing your admission letter. This usually takes 24 hours.</Text>
+
+                        <TouchableOpacity
+                            style={[styles.imagePicker, { marginTop: SPACING.xl, opacity: 0.6 }]}
+                            onPress={pickImage}
+                            activeOpacity={0.8}
+                        >
+                            {image ? (
+                                <Image source={{ uri: image }} style={styles.preview} />
+                            ) : (
+                                <View style={styles.placeholder}>
+                                    <Text style={styles.placeholderText}>Tap to update photo (Optional)</Text>
+                                </View>
+                            )}
+                        </TouchableOpacity>
+
+                        {image && (
+                            <TouchableOpacity onPress={uploadId} disabled={uploading} style={{ width: '100%' }}>
+                                <LinearGradient colors={COLORS.gradientPrimary} style={styles.uploadButton}>
+                                    {uploading ? <ActivityIndicator color="#fff" /> : (
+                                        <Text style={styles.uploadButtonText}>Update Admission Letter</Text>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        )}
                     </LinearGradient>
                 ) : (
                     <View style={styles.card}>

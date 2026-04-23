@@ -9,6 +9,8 @@ Notifications.setNotificationHandler({
         shouldShowAlert: true,
         shouldPlaySound: true,
         shouldSetBadge: false,
+        shouldShowBanner: true,
+        shouldShowList: true,
     }),
 });
 
@@ -40,7 +42,17 @@ export async function registerForPushNotificationsAsync() {
         // @ts-ignore
         const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 
-        token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+        if (!projectId) {
+            console.warn('No projectId found in app.json. Push notifications will not work.');
+            return;
+        }
+
+        try {
+            token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
+        } catch (e) {
+            console.error('Error getting push token:', e);
+            return;
+        }
     } else {
         console.log('Must use physical device for Push Notifications');
     }
