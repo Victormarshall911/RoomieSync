@@ -37,7 +37,6 @@ export default function ProfileScreen() {
                     <Text style={styles.headerSubtitle}>View and manage your identity</Text>
                 </View>
 
-                {/* Avatar & Name Card */}
                 <View style={styles.profileCard}>
                     <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.avatar}>
                         <Text style={styles.avatarText}>{initial}</Text>
