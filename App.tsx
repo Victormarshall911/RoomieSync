@@ -11,7 +11,6 @@ import { LogBox } from 'react-native';
 // Suppress known Expo Go notification warnings
 LogBox.ignoreLogs([
     'expo-notifications',
-    'No projectId found in app.json',
 ]);
 
 export default function App() {

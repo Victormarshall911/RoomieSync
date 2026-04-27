@@ -33,16 +33,35 @@ export default function VerificationScreen() {
         try {
             const response = await fetch(image);
             const blob = await response.blob();
-            console.log('Upload blob check:', { size: blob.size, type: blob.type });
-            const fileExt = image.split('.').pop();
+
+            // Convert blob to ArrayBuffer for reliable upload
+            const reader = new FileReader();
+            const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+                reader.onload = () => resolve(reader.result as ArrayBuffer);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blob);
+            });
+
+            console.log('Upload data check:', { size: arrayBuffer.byteLength, type: blob.type });
+
+            const fileExt = image.split('.').pop()?.toLowerCase();
             const fileName = `letter.${fileExt}`;
             const filePath = `${user?.id}/${fileName}`;
 
+            // Map common extensions to mime types
+            const mimeMap: { [key: string]: string } = {
+                'pdf': 'application/pdf',
+                'jpg': 'image/jpeg',
+                'jpeg': 'image/jpeg',
+                'png': 'image/png'
+            };
+            const contentType = blob.type || mimeMap[fileExt || ''] || 'application/octet-stream';
+
             const { error: uploadError } = await supabase.storage
                 .from('student-ids')
-                .upload(filePath, blob, {
+                .upload(filePath, arrayBuffer, {
                     upsert: true,
-                    contentType: blob.type || `image/${fileExt === 'pdf' ? 'pdf' : 'jpeg'}`
+                    contentType: contentType
                 });
 
             if (uploadError) throw uploadError;

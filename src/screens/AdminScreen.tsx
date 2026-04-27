@@ -141,7 +141,7 @@ function VerificationCard({ item, handleVerify, COLORS, styles }: any) {
                         style={{ width: '100%', height: '100%' }}
                         contentFit="contain"
                         transition={200}
-                        onError={(e) => console.error('Expo Image error:', e.error)}
+                        onError={(e) => console.error(`Expo Image error for ${item.id} [${item.full_name}]:`, e.error, imageUrl)}
                     />
                 </View>
             ) : (
