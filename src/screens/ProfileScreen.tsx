@@ -15,7 +15,7 @@ const getAvatarColor = (name: string) => {
 };
 
 export default function ProfileScreen() {
-    const { user, profile } = useAuth();
+    const { user, profile, fetchProfile } = useAuth();
     const { colors: COLORS, isDark } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const navigation = useNavigation<any>();
@@ -27,7 +27,7 @@ export default function ProfileScreen() {
                 .update({ searching_for: status })
                 .eq('id', user?.id);
             if (error) throw error;
-            Alert.alert('Status Updated', `You are now ${status}`);
+            await fetchProfile();
         } catch (error: any) {
             Alert.alert('Error', error.message);
         }
@@ -58,6 +58,15 @@ export default function ProfileScreen() {
                             <Text style={styles.verifiedBadgeText}>Verified Student</Text>
                         </View>
                     )}
+
+                    <TouchableOpacity
+                        style={styles.editButton}
+                        onPress={() => navigation.navigate('EditProfile')}
+                        activeOpacity={0.7}
+                    >
+                        <Ionicons name="create-outline" size={16} color={COLORS.primaryLight} style={{ marginRight: 6 }} />
+                        <Text style={styles.editButtonText}>Edit Profile</Text>
+                    </TouchableOpacity>
                 </View>
 
                 {/* Status Selection */}
@@ -236,6 +245,22 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     verifiedBadgeText: {
         ...FONTS.small,
         color: COLORS.success,
+        fontWeight: '600',
+    },
+    editButton: {
+        marginTop: SPACING.md,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.primaryFaded,
+        paddingHorizontal: SPACING.md,
+        paddingVertical: 8,
+        borderRadius: RADIUS.md,
+        borderWidth: 1,
+        borderColor: COLORS.primary,
+    },
+    editButtonText: {
+        ...FONTS.caption,
+        color: COLORS.primaryLight,
         fontWeight: '600',
     },
     statusContainer: {
