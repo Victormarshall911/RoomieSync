@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
-import { createStackNavigator } from '@react-navigation/stack';
+import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import { View, ActivityIndicator, Image } from 'react-native';
 import AuthScreen from '../screens/AuthScreen';
@@ -47,7 +47,15 @@ export default function AppNavigator() {
 
     return (
         <NavigationContainer>
-            <Stack.Navigator id="RootStack" screenOptions={{ headerShown: false }}>
+            <Stack.Navigator
+                id="RootStack"
+                screenOptions={{
+                    headerShown: false,
+                    gestureEnabled: true,
+                    gestureDirection: 'horizontal',
+                    cardStyleInterpolator: CardStyleInterpolators.forHorizontalIOS,
+                }}
+            >
                 {!session ? (
                     <Stack.Screen name="Auth" component={AuthScreen} />
                 ) : !profile ? (
