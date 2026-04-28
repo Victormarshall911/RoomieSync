@@ -4,8 +4,15 @@ import { Image } from 'expo-image';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
+
+const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
+const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
 
 export default function AdminScreen() {
     const { colors: COLORS, isDark } = useTheme();
@@ -83,7 +90,7 @@ export default function AdminScreen() {
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyEmoji}>🎉</Text>
+                        <Ionicons name="checkmark-done-circle-outline" size={48} color={COLORS.success} style={{ marginBottom: SPACING.md }} />
                         <Text style={styles.emptyTitle}>All clear!</Text>
                         <Text style={styles.emptyText}>No pending verifications</Text>
                     </View>
@@ -95,6 +102,7 @@ export default function AdminScreen() {
 
 function VerificationCard({ item, handleVerify, COLORS, styles }: any) {
     const [imageUrl, setImageUrl] = useState<string | null>(null);
+    const avatarColor = getAvatarColor(item.full_name || '');
 
     useEffect(() => {
         async function getImageUrl() {
@@ -125,9 +133,9 @@ function VerificationCard({ item, handleVerify, COLORS, styles }: any) {
     return (
         <View style={styles.card}>
             <View style={styles.cardHeader}>
-                <LinearGradient colors={[COLORS.accent, COLORS.accentLight]} style={styles.avatar}>
+                <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
                     <Text style={styles.avatarText}>{item.full_name?.charAt(0)}</Text>
-                </LinearGradient>
+                </View>
                 <View style={styles.cardHeaderInfo}>
                     <Text style={styles.name}>{item.full_name}</Text>
                     <Text style={styles.detail}>{item.university} · {item.department}</Text>
@@ -150,13 +158,14 @@ function VerificationCard({ item, handleVerify, COLORS, styles }: any) {
                 </View>
             )}
 
-            <View style={styles.cardActions}>
-                <TouchableOpacity onPress={() => handleVerify(item.id)} activeOpacity={0.85}>
-                    <LinearGradient colors={[COLORS.success, '#34D399']} style={styles.approveButton}>
-                        <Text style={styles.approveButtonText}>✓ Approve & Verify</Text>
-                    </LinearGradient>
-                </TouchableOpacity>
-            </View>
+            <TouchableOpacity
+                style={styles.approveButton}
+                onPress={() => handleVerify(item.id)}
+                activeOpacity={0.85}
+            >
+                <Ionicons name="checkmark" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                <Text style={styles.approveButtonText}>Approve & Verify</Text>
+            </TouchableOpacity>
         </View>
     );
 }
@@ -194,11 +203,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     list: {
         padding: SPACING.lg,
-        paddingBottom: 100,
+        paddingBottom: 80,
     },
     card: {
         backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.xxl,
+        borderRadius: RADIUS.xl,
         padding: SPACING.lg,
         marginBottom: SPACING.md,
         borderWidth: 1,
@@ -218,7 +227,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     avatarText: {
         color: '#FFFFFF',
-        ...FONTS.bodyBold,
+        fontSize: 17,
+        fontWeight: '600',
     },
     cardHeaderInfo: {
         marginLeft: SPACING.md,
@@ -237,32 +247,29 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         width: '100%',
         height: 200,
         backgroundColor: COLORS.bgInput,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         marginBottom: SPACING.md,
     },
     idPhotoLoading: {
         alignItems: 'center',
         justifyContent: 'center',
     },
-    cardActions: {},
     approveButton: {
+        flexDirection: 'row',
+        backgroundColor: COLORS.success,
         padding: SPACING.md,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         alignItems: 'center',
-        ...SHADOWS.button,
+        justifyContent: 'center',
     },
     approveButtonText: {
         color: '#FFFFFF',
         ...FONTS.bodyBold,
-        fontSize: 16,
+        fontSize: 15,
     },
     emptyContainer: {
         alignItems: 'center',
         paddingTop: 120,
-    },
-    emptyEmoji: {
-        fontSize: 48,
-        marginBottom: SPACING.md,
     },
     emptyTitle: {
         ...FONTS.h2,

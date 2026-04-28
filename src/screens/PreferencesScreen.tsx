@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
 export default function PreferencesScreen() {
     const navigation = useNavigation();
@@ -34,7 +33,7 @@ export default function PreferencesScreen() {
     };
 
     return (
-        <LinearGradient colors={isDark ? [COLORS.bg, '#16132B'] : [COLORS.bg, '#F1F5F9']} style={styles.container}>
+        <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Progress */}
                 <View style={styles.progressRow}>
@@ -45,12 +44,12 @@ export default function PreferencesScreen() {
                     <View style={styles.progressDot} />
                 </View>
 
-                <Text style={styles.stepLabel}>STEP 2 OF 3</Text>
+                <Text style={styles.stepLabel}>Step 2 of 3</Text>
                 <Text style={styles.title}>Preferences</Text>
                 <Text style={styles.subtitle}>Budget & location requirements</Text>
 
                 <View style={styles.card}>
-                    <Text style={styles.inputLabel}>BUDGET RANGE (₦ / YEAR)</Text>
+                    <Text style={styles.inputLabel}>Budget range (₦ / year)</Text>
                     <View style={styles.rangeContainer}>
                         <View style={[styles.inputWrapper, { flex: 1 }]}>
                             <TextInput
@@ -62,9 +61,7 @@ export default function PreferencesScreen() {
                                 onChangeText={setBudgetMin}
                             />
                         </View>
-                        <View style={styles.rangeDashContainer}>
-                            <Text style={styles.rangeDash}>→</Text>
-                        </View>
+                        <Text style={styles.rangeDash}>–</Text>
                         <View style={[styles.inputWrapper, { flex: 1 }]}>
                             <TextInput
                                 style={styles.input}
@@ -83,7 +80,7 @@ export default function PreferencesScreen() {
                         </Text>
                     </View>
 
-                    <Text style={[styles.inputLabel, { marginTop: SPACING.lg }]}>PREFERRED LOCATION</Text>
+                    <Text style={[styles.inputLabel, { marginTop: SPACING.lg }]}>Preferred location</Text>
                     <View style={styles.inputWrapper}>
                         <TextInput
                             style={styles.input}
@@ -95,18 +92,23 @@ export default function PreferencesScreen() {
                     </View>
                 </View>
 
-                <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
-                    <LinearGradient colors={COLORS.gradientPrimary} style={styles.nextButton}>
-                        <Text style={styles.nextButtonText}>Continue →</Text>
-                    </LinearGradient>
+                <TouchableOpacity
+                    style={styles.nextButton}
+                    onPress={handleNext}
+                    activeOpacity={0.85}
+                >
+                    <Text style={styles.nextButtonText}>Continue</Text>
                 </TouchableOpacity>
             </ScrollView>
-        </LinearGradient>
+        </View>
     );
 }
 
 const createStyles = (COLORS: any) => StyleSheet.create({
-    container: { flex: 1 },
+    container: {
+        flex: 1,
+        backgroundColor: COLORS.bg,
+    },
     content: { padding: SPACING.lg, paddingTop: 60 },
     progressRow: {
         flexDirection: 'row',
@@ -115,17 +117,15 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginBottom: SPACING.lg,
     },
     progressDot: {
-        width: 12, height: 12, borderRadius: 6,
+        width: 10, height: 10, borderRadius: 5,
         backgroundColor: COLORS.bgInput,
         borderWidth: 2, borderColor: COLORS.border,
     },
     progressActive: {
-        backgroundColor: COLORS.primary,
-        borderColor: COLORS.primaryLight,
+        backgroundColor: COLORS.primary, borderColor: COLORS.primary,
     },
     progressDone: {
-        backgroundColor: COLORS.success,
-        borderColor: COLORS.success,
+        backgroundColor: COLORS.success, borderColor: COLORS.success,
     },
     progressLine: {
         width: 40, height: 2,
@@ -137,7 +137,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     stepLabel: {
         ...FONTS.small,
-        color: COLORS.primaryLight,
+        color: COLORS.textMuted,
         textAlign: 'center',
         marginBottom: SPACING.xs,
     },
@@ -154,37 +154,29 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     card: {
         backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.xxl,
+        borderRadius: RADIUS.xl,
         padding: SPACING.lg,
         borderWidth: 1,
         borderColor: COLORS.border,
         marginBottom: SPACING.lg,
     },
     inputLabel: {
-        ...FONTS.small,
+        ...FONTS.caption,
         color: COLORS.textSecondary,
-        marginBottom: SPACING.sm,
-        letterSpacing: 1,
+        marginBottom: 6,
     },
     rangeContainer: {
         flexDirection: 'row',
         alignItems: 'center',
         gap: SPACING.sm,
     },
-    rangeDashContainer: {
-        width: 32, height: 32,
-        borderRadius: 16,
-        backgroundColor: COLORS.primaryFaded,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
     rangeDash: {
-        color: COLORS.primaryLight,
-        fontWeight: 'bold',
+        color: COLORS.textMuted,
+        fontSize: 18,
     },
     inputWrapper: {
         backgroundColor: COLORS.bgInput,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
@@ -196,7 +188,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     budgetPreview: {
         marginTop: SPACING.md,
         backgroundColor: COLORS.primaryFaded,
-        borderRadius: RADIUS.md,
+        borderRadius: RADIUS.sm,
         padding: SPACING.sm,
         alignItems: 'center',
     },
@@ -205,15 +197,15 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.primaryLight,
     },
     nextButton: {
+        backgroundColor: COLORS.primary,
         padding: SPACING.md,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         alignItems: 'center',
-        ...SHADOWS.button,
         marginBottom: SPACING.xxl,
     },
     nextButtonText: {
         color: '#FFFFFF',
         ...FONTS.bodyBold,
-        fontSize: 17,
+        fontSize: 16,
     },
 });

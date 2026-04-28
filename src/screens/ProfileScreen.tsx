@@ -4,8 +4,15 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
+
+const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
+const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
 
 export default function ProfileScreen() {
     const { user, profile } = useAuth();
@@ -27,6 +34,7 @@ export default function ProfileScreen() {
     };
 
     const initial = profile?.full_name?.charAt(0) || '?';
+    const avatarColor = getAvatarColor(profile?.full_name || '');
 
     return (
         <View style={styles.container}>
@@ -38,15 +46,16 @@ export default function ProfileScreen() {
                 </View>
 
                 <View style={styles.profileCard}>
-                    <LinearGradient colors={[COLORS.primary, COLORS.primaryLight]} style={styles.avatar}>
+                    <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
                         <Text style={styles.avatarText}>{initial}</Text>
-                    </LinearGradient>
+                    </View>
                     <Text style={styles.name}>{profile?.full_name || 'User'}</Text>
                     <Text style={styles.email}>{user?.email}</Text>
 
                     {profile?.is_verified && (
                         <View style={styles.verifiedBadge}>
-                            <Text style={styles.verifiedBadgeText}>✓ Verified Student</Text>
+                            <Ionicons name="checkmark-circle" size={14} color={COLORS.success} style={{ marginRight: 4 }} />
+                            <Text style={styles.verifiedBadgeText}>Verified Student</Text>
                         </View>
                     )}
                 </View>
@@ -54,13 +63,13 @@ export default function ProfileScreen() {
                 {/* Status Selection */}
                 <View style={styles.infoCard}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>MY CURRENT STATUS</Text>
+                        <Text style={styles.sectionTitle}>Current Status</Text>
                     </View>
                     <View style={styles.statusContainer}>
                         {[
-                            { id: 'Looking for Roommate', label: 'Needs Room', icon: '🔍' },
-                            { id: 'Listing a Space', label: 'Has Space', icon: '🏠' },
-                            { id: 'Already Matched', label: 'Matched', icon: '✅' }
+                            { id: 'Looking for Roommate', label: 'Needs Room', icon: 'search-outline' as const },
+                            { id: 'Listing a Space', label: 'Has Space', icon: 'home-outline' as const },
+                            { id: 'Already Matched', label: 'Matched', icon: 'checkmark-circle-outline' as const }
                         ].map((s) => (
                             <TouchableOpacity
                                 key={s.id}
@@ -70,7 +79,12 @@ export default function ProfileScreen() {
                                 ]}
                                 onPress={() => updateStatus(s.id)}
                             >
-                                <Text style={styles.statusIcon}>{s.icon}</Text>
+                                <Ionicons
+                                    name={s.icon}
+                                    size={20}
+                                    color={profile?.searching_for === s.id ? COLORS.primaryLight : COLORS.textMuted}
+                                    style={{ marginBottom: 4 }}
+                                />
                                 <Text style={[
                                     styles.statusLabel,
                                     profile?.searching_for === s.id && styles.statusLabelActive
@@ -83,7 +97,7 @@ export default function ProfileScreen() {
                 {/* Info Section */}
                 <View style={styles.infoCard}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>ACADEMIC INFO</Text>
+                        <Text style={styles.sectionTitle}>Academic Info</Text>
                     </View>
 
                     <InfoRow label="University" value={profile?.university} />
@@ -93,7 +107,7 @@ export default function ProfileScreen() {
 
                 <View style={styles.infoCard}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>ROOMMATE PREFERENCES</Text>
+                        <Text style={styles.sectionTitle}>Roommate Preferences</Text>
                     </View>
                     <InfoRow label="Preferred Location" value={profile?.location_preference} />
                     <InfoRow
@@ -109,7 +123,7 @@ export default function ProfileScreen() {
                 {/* Marketplace Section */}
                 <View style={styles.infoCard}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>ROOMMATE MARKETPLACE</Text>
+                        <Text style={styles.sectionTitle}>Marketplace</Text>
                     </View>
                     <Text style={styles.emptyText}>You haven't posted any rooms or ads yet.</Text>
                 </View>
@@ -117,7 +131,7 @@ export default function ProfileScreen() {
                 {/* Lifestyle Section */}
                 <View style={styles.infoCard}>
                     <View style={styles.sectionHeader}>
-                        <Text style={styles.sectionTitle}>LIFESTYLE HABITS</Text>
+                        <Text style={styles.sectionTitle}>Lifestyle Habits</Text>
                     </View>
 
                     <InfoRow
@@ -178,37 +192,28 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.textSecondary,
         marginTop: 2,
     },
-    settingsButton: {
-        padding: SPACING.sm,
-        backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.md,
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
     profileCard: {
         alignItems: 'center',
         padding: SPACING.xl,
         marginHorizontal: SPACING.lg,
         backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.xxl,
+        borderRadius: RADIUS.xl,
         borderWidth: 1,
         borderColor: COLORS.border,
         marginBottom: SPACING.lg,
-        ...SHADOWS.card,
     },
     avatar: {
-        width: 80,
-        height: 80,
-        borderRadius: 40,
+        width: 72,
+        height: 72,
+        borderRadius: 36,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: SPACING.md,
-        ...SHADOWS.button,
     },
     avatarText: {
         color: '#FFFFFF',
-        fontSize: 32,
-        fontWeight: '800',
+        fontSize: 28,
+        fontWeight: '700',
     },
     name: {
         ...FONTS.h2,
@@ -221,19 +226,17 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     verifiedBadge: {
         marginTop: SPACING.md,
-        backgroundColor: `${COLORS.success}20`,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: `${COLORS.success}15`,
         paddingHorizontal: SPACING.md,
         paddingVertical: 6,
         borderRadius: RADIUS.full,
-        borderWidth: 1,
-        borderColor: `${COLORS.success}40`,
     },
     verifiedBadgeText: {
         ...FONTS.small,
         color: COLORS.success,
-        fontWeight: '700',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        fontWeight: '600',
     },
     statusContainer: {
         flexDirection: 'row',
@@ -243,7 +246,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     statusOption: {
         flex: 1,
         backgroundColor: COLORS.bgInput,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         padding: SPACING.md,
         alignItems: 'center',
         borderWidth: 1,
@@ -253,14 +256,10 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         backgroundColor: COLORS.primaryFaded,
         borderColor: COLORS.primary,
     },
-    statusIcon: {
-        fontSize: 20,
-        marginBottom: 4,
-    },
     statusLabel: {
         ...FONTS.small,
         color: COLORS.textSecondary,
-        fontWeight: '600',
+        fontWeight: '500',
     },
     statusLabelActive: {
         color: COLORS.primaryLight,
@@ -284,9 +283,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginBottom: SPACING.md,
     },
     sectionTitle: {
-        ...FONTS.small,
-        color: COLORS.primaryLight,
-        letterSpacing: 1.5,
+        ...FONTS.caption,
+        color: COLORS.textMuted,
+        fontWeight: '600',
     },
     infoRow: {
         flexDirection: 'row',

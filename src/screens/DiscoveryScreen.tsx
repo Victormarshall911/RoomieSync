@@ -5,11 +5,18 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { calculateMatchPercentage, Profile } from '../utils/matching';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 const PAGE_SIZE = 10;
+
+// Deterministic avatar color from name
+const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
+const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
 
 export interface Listing {
     id: string;
@@ -151,16 +158,15 @@ export default function DiscoveryScreen() {
         const creatorName = item.profiles?.full_name || item.creator_name_demo || 'User';
         const matchPct = (profile && item.profiles) ? calculateMatchPercentage(profile as Profile, item.profiles) : (item.user_id ? 0 : 85);
         const matchColor = getMatchColor(matchPct);
+        const avatarColor = getAvatarColor(creatorName);
 
         return (
             <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => item.profiles && handleChat(item.profiles)}>
                 <View style={styles.cardHeader}>
-                    <LinearGradient colors={COLORS.gradientPrimary} style={styles.avatar}>
+                    <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
                         <Text style={styles.avatarText}>{creatorName.charAt(0)}</Text>
-                    </LinearGradient>
-                    <View style={[styles.matchBadge, { backgroundColor: `${matchColor}20` }]}>
-                        <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
                     </View>
+                    <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
                 </View>
                 <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
                 <Text style={styles.uniTag} numberOfLines={1}>{creatorName}</Text>
@@ -175,12 +181,13 @@ export default function DiscoveryScreen() {
                             styles.statusTagText,
                             item.searching_for === 'Listing a Space' ? styles.statusTagTextSpace : styles.statusTagTextRoommate
                         ]}>
-                            {item.searching_for === 'Listing a Space' ? '🏠 Has Room' : '🔍 Needs Roomie'}
+                            {item.searching_for === 'Listing a Space' ? 'Has Room' : 'Needs Roomie'}
                         </Text>
                     </View>
                     {(item.profiles?.is_verified || !item.user_id) && (
                         <View style={styles.verifiedTag}>
-                            <Text style={styles.verifiedTagText}>✓ Verified</Text>
+                            <Ionicons name="checkmark-circle" size={13} color={COLORS.success} style={{ marginRight: 3 }} />
+                            <Text style={styles.verifiedTagText}>Verified</Text>
                         </View>
                     )}
                     <View style={styles.budgetTag}>
@@ -189,7 +196,7 @@ export default function DiscoveryScreen() {
                 </View>
 
                 <TouchableOpacity style={styles.chatButton} onPress={() => item.profiles && handleChat(item.profiles)}>
-                    <Text style={styles.chatButtonText}>{item.user_id ? 'Chat →' : 'Demo Mode →'}</Text>
+                    <Text style={styles.chatButtonText}>{item.user_id ? 'Chat' : 'Demo Mode'}</Text>
                 </TouchableOpacity>
             </TouchableOpacity>
         );
@@ -234,9 +241,7 @@ export default function DiscoveryScreen() {
                         onPress={() => navigation.navigate('Profile')}
                         activeOpacity={0.7}
                     >
-                        <LinearGradient colors={COLORS.gradientPrimary} style={styles.profileShortcut}>
-                            <Ionicons name="person" size={20} color={isDark ? '#F8FAFC' : '#FFFFFF'} />
-                        </LinearGradient>
+                        <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -315,12 +320,7 @@ export default function DiscoveryScreen() {
                 activeOpacity={0.8}
                 onPress={() => navigation.navigate('CreateListing')}
             >
-                <LinearGradient
-                    colors={COLORS.gradientPrimary}
-                    style={styles.fabGradient}
-                >
-                    <Ionicons name="add" size={32} color={isDark ? '#F8FAFC' : '#FFFFFF'} />
-                </LinearGradient>
+                <Ionicons name="add" size={28} color="#FFFFFF" />
             </TouchableOpacity>
         </View>
     );
@@ -353,22 +353,25 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         gap: SPACING.md,
     },
     headerLogo: {
-        width: 44,
-        height: 44,
-        borderRadius: RADIUS.md,
+        width: 40,
+        height: 40,
+        borderRadius: RADIUS.sm,
     },
     headerTitle: {
         ...FONTS.h1,
         color: COLORS.textPrimary,
     },
     headerSubtitle: {
-        ...FONTS.body,
+        ...FONTS.caption,
         color: COLORS.textSecondary,
     },
     profileShortcut: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: COLORS.bgCard,
+        borderWidth: 1,
+        borderColor: COLORS.border,
         alignItems: 'center',
         justifyContent: 'center',
     },
@@ -376,7 +379,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         marginHorizontal: SPACING.lg,
         padding: SPACING.sm,
-        borderRadius: RADIUS.md,
+        borderRadius: RADIUS.sm,
         borderWidth: 1,
         borderColor: 'rgba(239, 68, 68, 0.2)',
         marginBottom: SPACING.md,
@@ -394,9 +397,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: COLORS.bgInput,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         paddingHorizontal: SPACING.md,
-        height: 50,
+        height: 46,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
@@ -431,8 +434,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.textSecondary,
     },
     filterChipTextActive: {
-        color: COLORS.white,
-        fontWeight: '700',
+        color: '#FFFFFF',
+        fontWeight: '600',
     },
     list: {
         paddingHorizontal: SPACING.md,
@@ -449,33 +452,28 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginBottom: SPACING.md,
         borderWidth: 1,
         borderColor: COLORS.border,
-        ...SHADOWS.card,
     },
     cardHeader: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         marginBottom: SPACING.md,
     },
     avatar: {
-        width: 50,
-        height: 50,
-        borderRadius: RADIUS.lg,
+        width: 44,
+        height: 44,
+        borderRadius: RADIUS.md,
         alignItems: 'center',
         justifyContent: 'center',
     },
     avatarText: {
-        ...FONTS.h2,
+        fontSize: 18,
+        fontWeight: '600',
         color: '#FFFFFF',
-    },
-    matchBadge: {
-        paddingHorizontal: 8,
-        paddingVertical: 4,
-        borderRadius: RADIUS.md,
     },
     matchText: {
         ...FONTS.small,
-        fontWeight: '800',
+        fontWeight: '700',
     },
     name: {
         ...FONTS.bodyBold,
@@ -513,7 +511,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     statusTagText: {
         ...FONTS.small,
-        fontWeight: '700',
+        fontWeight: '600',
     },
     statusTagTextSpace: {
         color: COLORS.success,
@@ -529,7 +527,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     verifiedTagText: {
         ...FONTS.small,
         color: COLORS.success,
-        fontWeight: '700',
+        fontWeight: '600',
     },
     budgetTag: {
         alignSelf: 'flex-start',
@@ -537,7 +535,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         borderColor: COLORS.border,
         paddingHorizontal: 8,
         paddingVertical: 2,
-        borderRadius: RADIUS.md,
+        borderRadius: RADIUS.sm,
     },
     budgetTagText: {
         ...FONTS.small,
@@ -545,7 +543,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     chatButton: {
         backgroundColor: COLORS.bgInput,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         paddingVertical: 10,
         alignItems: 'center',
         marginTop: 'auto',
@@ -555,7 +553,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     chatButtonText: {
         ...FONTS.small,
         color: COLORS.primaryLight,
-        fontWeight: '800',
+        fontWeight: '700',
     },
     footerLoading: {
         paddingVertical: SPACING.md,
@@ -569,19 +567,12 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         position: 'absolute',
         bottom: 84,
         right: SPACING.lg,
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        ...SHADOWS.button,
-        elevation: 8,
-    },
-    fabGradient: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 30,
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        backgroundColor: COLORS.primary,
         alignItems: 'center',
         justifyContent: 'center',
-        borderWidth: 2,
-        borderColor: 'rgba(255,255,255,0.2)',
+        ...SHADOWS.button,
     },
 });

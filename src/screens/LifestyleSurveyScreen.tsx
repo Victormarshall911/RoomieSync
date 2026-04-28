@@ -3,20 +3,19 @@ import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIn
 import { useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
 const LIFESTYLE_OPTIONS = {
     sleep_habit: {
-        label: '😴 Sleep Schedule',
+        label: 'Sleep Schedule',
         options: [
             { value: 'Early Bird', label: 'Early Bird', desc: 'Asleep by 10PM' },
             { value: 'Night Owl', label: 'Night Owl', desc: 'Up past 1AM' },
         ],
     },
     cleanliness: {
-        label: '🧹 Cleanliness',
+        label: 'Cleanliness',
         options: [
             { value: 2, label: 'Tidy', desc: 'Keep it clean' },
             { value: 7, label: 'Very Clean', desc: 'Spotless always' },
@@ -24,14 +23,14 @@ const LIFESTYLE_OPTIONS = {
         ],
     },
     socializing: {
-        label: '🎉 Social Level',
+        label: 'Social Level',
         options: [
             { value: 'Rarely', label: 'Quiet', desc: 'Prefer peace & quiet' },
             { value: 'Guests often', label: 'Social', desc: 'Love having guests' },
         ],
     },
     smoking: {
-        label: '🚭 Smoking',
+        label: 'Smoking',
         options: [
             { value: 'No', label: 'No', desc: "Don't smoke" },
             { value: 'Yes', label: 'Yes', desc: 'Smoke regularly' },
@@ -87,7 +86,7 @@ export default function LifestyleSurveyScreen() {
     };
 
     return (
-        <LinearGradient colors={isDark ? [COLORS.bg, '#16132B'] : [COLORS.bg, '#F1F5F9']} style={styles.container}>
+        <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
                 <View style={styles.progressRow}>
@@ -98,7 +97,7 @@ export default function LifestyleSurveyScreen() {
                     <View style={[styles.progressDot, styles.progressActive]} />
                 </View>
 
-                <Text style={styles.stepLabel}>STEP 3 OF 3</Text>
+                <Text style={styles.stepLabel}>Step 3 of 3</Text>
                 <Text style={styles.title}>Lifestyle</Text>
                 <Text style={styles.subtitle}>This helps us find your ideal match</Text>
 
@@ -128,35 +127,38 @@ export default function LifestyleSurveyScreen() {
                     </View>
                 ))}
 
-                <TouchableOpacity onPress={handleSubmit} disabled={!allSelected || loading} activeOpacity={0.85}>
-                    <LinearGradient
-                        colors={allSelected ? COLORS.gradientPrimary : [COLORS.bgInput, COLORS.bgInput]}
-                        style={styles.submitButton}
-                    >
-                        {loading ? <ActivityIndicator color="#fff" /> : (
-                            <Text style={styles.submitButtonText}>Complete Profile ✓</Text>
-                        )}
-                    </LinearGradient>
+                <TouchableOpacity
+                    style={[styles.submitButton, !allSelected && styles.submitButtonDisabled]}
+                    onPress={handleSubmit}
+                    disabled={!allSelected || loading}
+                    activeOpacity={0.85}
+                >
+                    {loading ? <ActivityIndicator color="#fff" /> : (
+                        <Text style={styles.submitButtonText}>Complete Profile</Text>
+                    )}
                 </TouchableOpacity>
             </ScrollView>
-        </LinearGradient>
+        </View>
     );
 }
 
 const createStyles = (COLORS: any) => StyleSheet.create({
-    container: { flex: 1 },
+    container: {
+        flex: 1,
+        backgroundColor: COLORS.bg,
+    },
     content: { padding: SPACING.lg, paddingTop: 60, paddingBottom: SPACING.xxl },
     progressRow: {
         flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
         marginBottom: SPACING.lg,
     },
     progressDot: {
-        width: 12, height: 12, borderRadius: 6,
+        width: 10, height: 10, borderRadius: 5,
         backgroundColor: COLORS.bgInput,
         borderWidth: 2, borderColor: COLORS.border,
     },
     progressActive: {
-        backgroundColor: COLORS.primary, borderColor: COLORS.primaryLight,
+        backgroundColor: COLORS.primary, borderColor: COLORS.primary,
     },
     progressDone: {
         backgroundColor: COLORS.success, borderColor: COLORS.success,
@@ -167,7 +169,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     progressLineDone: { backgroundColor: COLORS.success },
     stepLabel: {
-        ...FONTS.small, color: COLORS.primaryLight,
+        ...FONTS.small, color: COLORS.textMuted,
         textAlign: 'center', marginBottom: SPACING.xs,
     },
     title: {
@@ -179,7 +181,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     card: {
         backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.xxl,
+        borderRadius: RADIUS.xl,
         padding: SPACING.lg,
         borderWidth: 1, borderColor: COLORS.border,
         marginBottom: SPACING.md,
@@ -190,7 +192,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     optionsGrid: { gap: SPACING.sm },
     optionChip: {
         padding: SPACING.md,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         borderWidth: 1, borderColor: COLORS.border,
         backgroundColor: COLORS.bgInput,
     },
@@ -207,13 +209,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     optionDescActive: { color: COLORS.textSecondary },
     submitButton: {
+        backgroundColor: COLORS.primary,
         padding: SPACING.md,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         alignItems: 'center',
-        ...SHADOWS.button,
         marginTop: SPACING.sm,
     },
+    submitButtonDisabled: {
+        backgroundColor: COLORS.bgInput,
+    },
     submitButtonText: {
-        color: '#FFFFFF', ...FONTS.bodyBold, fontSize: 17,
+        color: '#FFFFFF', ...FONTS.bodyBold, fontSize: 16,
     },
 });

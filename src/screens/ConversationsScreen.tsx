@@ -4,8 +4,15 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
+
+const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
+const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
 
 export default function ConversationsScreen() {
     const { user } = useAuth();
@@ -40,6 +47,7 @@ export default function ConversationsScreen() {
         const otherUserId = item.user1_id === user?.id ? item.user2_id : item.user1_id;
         const otherUser = item.user1_id === user?.id ? item.user2 : item.profiles;
         const initial = otherUser?.full_name?.charAt(0) || '?';
+        const avatarColor = getAvatarColor(otherUser?.full_name || '');
 
         return (
             <TouchableOpacity
@@ -50,16 +58,14 @@ export default function ConversationsScreen() {
                 })}
                 activeOpacity={0.7}
             >
-                <LinearGradient colors={COLORS.gradientPrimary} style={styles.avatar}>
+                <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
                     <Text style={styles.avatarText}>{initial}</Text>
-                </LinearGradient>
+                </View>
                 <View style={styles.convContent}>
                     <Text style={styles.convName}>{otherUser?.full_name || 'Unknown'}</Text>
                     <Text style={styles.convMeta}>{otherUser?.university || 'Tap to chat'}</Text>
                 </View>
-                <View style={styles.convArrow}>
-                    <Text style={styles.convArrowText}>›</Text>
-                </View>
+                <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
             </TouchableOpacity>
         );
     };
@@ -87,7 +93,7 @@ export default function ConversationsScreen() {
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Text style={styles.emptyEmoji}>💬</Text>
+                        <Ionicons name="chatbubbles-outline" size={48} color={COLORS.textMuted} style={{ marginBottom: SPACING.md }} />
                         <Text style={styles.emptyTitle}>No messages yet</Text>
                         <Text style={styles.emptyText}>Start chatting from the Discover tab</Text>
                     </View>
@@ -135,15 +141,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         borderColor: COLORS.border,
     },
     avatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
     },
     avatarText: {
         color: '#FFFFFF',
-        ...FONTS.h3,
+        fontSize: 17,
+        fontWeight: '600',
     },
     convContent: {
         flex: 1,
@@ -158,26 +165,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.textSecondary,
         marginTop: 2,
     },
-    convArrow: {
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: COLORS.bgInput,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    convArrowText: {
-        color: COLORS.textSecondary,
-        fontSize: 22,
-        fontWeight: '300',
-    },
     emptyContainer: {
         alignItems: 'center',
         paddingTop: 120,
-    },
-    emptyEmoji: {
-        fontSize: 48,
-        marginBottom: SPACING.md,
     },
     emptyTitle: {
         ...FONTS.h2,

@@ -4,8 +4,8 @@ import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { LinearGradient } from 'expo-linear-gradient';
-import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
 export default function VerificationScreen() {
     const { user, profile, fetchProfile } = useAuth();
@@ -93,15 +93,15 @@ export default function VerificationScreen() {
             <View style={styles.content}>
                 {/* Status Banner */}
                 {profile?.is_verified ? (
-                    <LinearGradient colors={[`${COLORS.success}20`, `${COLORS.success}08`]} style={styles.statusBanner}>
-                        <Text style={styles.statusEmoji}>✅</Text>
+                    <View style={styles.statusBannerSuccess}>
+                        <Ionicons name="checkmark-circle" size={40} color={COLORS.success} style={{ marginBottom: SPACING.md }} />
                         <Text style={styles.statusTitle}>Verified Student</Text>
                         <Text style={styles.statusDesc}>Your identity has been confirmed</Text>
-                    </LinearGradient>
+                    </View>
                 ) : profile?.school_id_url ? (
-                    <LinearGradient colors={[`${COLORS.accent}20`, `${COLORS.accent}08`]} style={[styles.statusBanner, { borderColor: `${COLORS.accent}30` }]}>
-                        <Text style={styles.statusEmoji}>⏳</Text>
-                        <Text style={styles.statusTitle}>Verification Pending</Text>
+                    <View style={styles.statusBannerPending}>
+                        <Ionicons name="time-outline" size={40} color={COLORS.accent} style={{ marginBottom: SPACING.md }} />
+                        <Text style={[styles.statusTitle, { color: COLORS.accent }]}>Verification Pending</Text>
                         <Text style={styles.statusDesc}>We're reviewing your admission letter. This usually takes 24 hours.</Text>
 
                         <TouchableOpacity
@@ -119,20 +119,22 @@ export default function VerificationScreen() {
                         </TouchableOpacity>
 
                         {image && (
-                            <TouchableOpacity onPress={uploadId} disabled={uploading} style={{ width: '100%' }}>
-                                <LinearGradient colors={COLORS.gradientPrimary} style={styles.uploadButton}>
-                                    {uploading ? <ActivityIndicator color="#fff" /> : (
-                                        <Text style={styles.uploadButtonText}>Update Admission Letter</Text>
-                                    )}
-                                </LinearGradient>
+                            <TouchableOpacity
+                                style={[styles.uploadButton, uploading && { opacity: 0.7 }]}
+                                onPress={uploadId}
+                                disabled={uploading}
+                            >
+                                {uploading ? <ActivityIndicator color="#fff" /> : (
+                                    <Text style={styles.uploadButtonText}>Update Admission Letter</Text>
+                                )}
                             </TouchableOpacity>
                         )}
-                    </LinearGradient>
+                    </View>
                 ) : (
                     <View style={styles.card}>
                         <View style={styles.cardIconRow}>
                             <View style={styles.cardIcon}>
-                                <Text style={{ fontSize: 28 }}>📄</Text>
+                                <Ionicons name="document-text-outline" size={28} color={COLORS.primaryLight} />
                             </View>
                         </View>
                         <Text style={styles.cardTitle}>Upload Admission Letter</Text>
@@ -145,25 +147,25 @@ export default function VerificationScreen() {
                                 <Image source={{ uri: image }} style={styles.preview} />
                             ) : (
                                 <View style={styles.placeholder}>
-                                    <Text style={{ fontSize: 32, marginBottom: SPACING.sm }}>📷</Text>
+                                    <Ionicons name="camera-outline" size={32} color={COLORS.textMuted} style={{ marginBottom: SPACING.sm }} />
                                     <Text style={styles.placeholderText}>Tap to select photo</Text>
                                 </View>
                             )}
                         </TouchableOpacity>
 
                         <TouchableOpacity
+                            style={[
+                                styles.uploadButton,
+                                !image && styles.uploadButtonDisabled,
+                                uploading && { opacity: 0.7 }
+                            ]}
                             onPress={uploadId}
                             disabled={!image || uploading}
                             activeOpacity={0.85}
                         >
-                            <LinearGradient
-                                colors={image ? COLORS.gradientPrimary : [COLORS.bgInput, COLORS.bgInput]}
-                                style={styles.uploadButton}
-                            >
-                                {uploading ? <ActivityIndicator color="#fff" /> : (
-                                    <Text style={styles.uploadButtonText}>Submit for Verification</Text>
-                                )}
-                            </LinearGradient>
+                            {uploading ? <ActivityIndicator color="#fff" /> : (
+                                <Text style={styles.uploadButtonText}>Submit for Verification</Text>
+                            )}
                         </TouchableOpacity>
                     </View>
                 )}
@@ -194,16 +196,21 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     content: {
         padding: SPACING.lg,
     },
-    statusBanner: {
-        borderRadius: RADIUS.xxl,
+    statusBannerSuccess: {
+        borderRadius: RADIUS.xl,
         padding: SPACING.xl,
         alignItems: 'center',
         borderWidth: 1,
         borderColor: `${COLORS.success}30`,
+        backgroundColor: `${COLORS.success}08`,
     },
-    statusEmoji: {
-        fontSize: 48,
-        marginBottom: SPACING.md,
+    statusBannerPending: {
+        borderRadius: RADIUS.xl,
+        padding: SPACING.xl,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: `${COLORS.accent}30`,
+        backgroundColor: `${COLORS.accent}08`,
     },
     statusTitle: {
         ...FONTS.h2,
@@ -213,10 +220,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.caption,
         color: COLORS.textSecondary,
         marginTop: SPACING.xs,
+        textAlign: 'center',
     },
     card: {
         backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.xxl,
+        borderRadius: RADIUS.xl,
         padding: SPACING.lg,
         borderWidth: 1,
         borderColor: COLORS.border,
@@ -249,7 +257,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     imagePicker: {
         width: '100%',
         aspectRatio: 1.5,
-        borderRadius: RADIUS.xl,
+        borderRadius: RADIUS.md,
         borderWidth: 2,
         borderColor: COLORS.border,
         borderStyle: 'dashed',
@@ -271,14 +279,18 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.textMuted,
     },
     uploadButton: {
+        backgroundColor: COLORS.primary,
         padding: SPACING.md,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         alignItems: 'center',
-        ...SHADOWS.button,
+        width: '100%',
+    },
+    uploadButtonDisabled: {
+        backgroundColor: COLORS.bgInput,
     },
     uploadButtonText: {
         color: '#FFFFFF',
         ...FONTS.bodyBold,
-        fontSize: 17,
+        fontSize: 16,
     },
 });

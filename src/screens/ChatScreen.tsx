@@ -4,8 +4,15 @@ import { useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
+
+const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
+const getAvatarColor = (name: string) => {
+    let hash = 0;
+    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
+};
 
 export default function ChatScreen() {
     const route = useRoute();
@@ -131,6 +138,8 @@ export default function ChatScreen() {
         return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     };
 
+    const avatarColor = getAvatarColor(otherProfile?.full_name || '');
+
     const renderMessage = ({ item }: any) => {
         const isMine = item.sender_id === user?.id;
         return (
@@ -147,16 +156,16 @@ export default function ChatScreen() {
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <LinearGradient colors={COLORS.gradientPrimary} style={styles.headerAvatar}>
+                <View style={[styles.headerAvatar, { backgroundColor: avatarColor }]}>
                     <Text style={styles.headerAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
-                </LinearGradient>
+                </View>
                 <View style={styles.headerInfo}>
                     <Text style={styles.headerName}>{otherProfile?.full_name}</Text>
                     <View style={styles.headerMetaRow}>
                         <Text style={styles.headerMeta}>{otherProfile?.university}</Text>
                         {otherProfile?.is_verified && (
                             <View style={styles.verifiedBadge}>
-                                <Text style={styles.verifiedBadgeText}>✓ Verified Student</Text>
+                                <Text style={styles.verifiedBadgeText}>Verified</Text>
                             </View>
                         )}
                     </View>
@@ -179,7 +188,7 @@ export default function ChatScreen() {
                     showsVerticalScrollIndicator={false}
                     ListEmptyComponent={
                         <View style={styles.emptyChat}>
-                            <Text style={styles.emptyChatEmoji}>👋</Text>
+                            <Ionicons name="hand-right-outline" size={40} color={COLORS.textMuted} style={{ marginBottom: SPACING.sm }} />
                             <Text style={styles.emptyChatText}>Say hello!</Text>
                         </View>
                     }
@@ -197,10 +206,8 @@ export default function ChatScreen() {
                             multiline
                         />
                     </View>
-                    <TouchableOpacity onPress={sendMessage} activeOpacity={0.8}>
-                        <LinearGradient colors={COLORS.gradientPrimary} style={styles.sendButton}>
-                            <Text style={styles.sendButtonText}>↑</Text>
-                        </LinearGradient>
+                    <TouchableOpacity style={styles.sendButton} onPress={sendMessage} activeOpacity={0.8}>
+                        <Ionicons name="send" size={20} color="#FFFFFF" />
                     </TouchableOpacity>
                 </View>
             </KeyboardAvoidingView>
@@ -232,7 +239,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     headerAvatarText: {
         color: '#FFFFFF',
-        ...FONTS.bodyBold,
+        fontSize: 16,
+        fontWeight: '600',
     },
     headerInfo: {
         marginLeft: SPACING.md,
@@ -261,7 +269,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     verifiedBadgeText: {
         ...FONTS.small,
         color: COLORS.success,
-        fontWeight: '700',
+        fontWeight: '600',
         fontSize: 10,
     },
     chatArea: {
@@ -341,21 +349,13 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         width: 42,
         height: 42,
         borderRadius: 21,
+        backgroundColor: COLORS.primary,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    sendButtonText: {
-        color: '#FFFFFF',
-        fontSize: 20,
-        fontWeight: 'bold',
     },
     emptyChat: {
         alignItems: 'center',
         paddingTop: 60,
-    },
-    emptyChatEmoji: {
-        fontSize: 48,
-        marginBottom: SPACING.sm,
     },
     emptyChatText: {
         ...FONTS.caption,

@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
 import { supabase } from '../lib/supabase';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
@@ -36,7 +35,7 @@ export default function AuthScreen() {
     }
 
     return (
-        <LinearGradient colors={isDark ? ['#0F172A', '#1E293B'] : ['#F8FAFC', '#F1F5F9']} style={styles.container}>
+        <View style={styles.container}>
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
@@ -89,12 +88,15 @@ export default function AuthScreen() {
                             </View>
                         </View>
 
-                        <TouchableOpacity onPress={handleAuth} disabled={loading} activeOpacity={0.85}>
-                            <LinearGradient colors={COLORS.gradientPrimary} style={styles.button}>
-                                {loading ? <ActivityIndicator color="#fff" /> : (
-                                    <Text style={styles.buttonText}>{isSignUp ? 'Sign Up' : 'Login'}</Text>
-                                )}
-                            </LinearGradient>
+                        <TouchableOpacity
+                            style={[styles.button, loading && { opacity: 0.7 }]}
+                            onPress={handleAuth}
+                            disabled={loading}
+                            activeOpacity={0.85}
+                        >
+                            {loading ? <ActivityIndicator color="#fff" /> : (
+                                <Text style={styles.buttonText}>{isSignUp ? 'Sign Up' : 'Login'}</Text>
+                            )}
                         </TouchableOpacity>
 
                         <View style={styles.dividerRow}>
@@ -112,13 +114,14 @@ export default function AuthScreen() {
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>
-        </LinearGradient>
+        </View>
     );
 }
 
 const createStyles = (COLORS: any) => StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: COLORS.bg,
     },
     keyboardView: {
         flex: 1,
@@ -135,9 +138,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginBottom: SPACING.xl,
     },
     logoImage: {
-        width: 80,
-        height: 80,
-        borderRadius: RADIUS.xl,
+        width: 72,
+        height: 72,
+        borderRadius: RADIUS.lg,
         marginBottom: SPACING.md,
     },
     title: {
@@ -151,7 +154,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     card: {
         backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.xxl,
+        borderRadius: RADIUS.xl,
         padding: SPACING.lg,
         borderWidth: 1,
         borderColor: COLORS.border,
@@ -167,13 +170,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     inputLabel: {
         ...FONTS.caption,
         color: COLORS.textSecondary,
-        marginBottom: SPACING.sm,
-        textTransform: 'uppercase',
-        letterSpacing: 1,
+        marginBottom: 6,
     },
     inputWrapper: {
         backgroundColor: COLORS.bgInput,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
@@ -183,16 +184,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.textPrimary,
     },
     button: {
+        backgroundColor: COLORS.primary,
         padding: SPACING.md,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         alignItems: 'center',
         marginTop: SPACING.sm,
-        ...SHADOWS.button,
     },
     buttonText: {
         color: '#FFFFFF',
         ...FONTS.bodyBold,
-        fontSize: 17,
+        fontSize: 16,
     },
     dividerRow: {
         flexDirection: 'row',
@@ -218,6 +219,6 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     toggleHighlight: {
         color: COLORS.primaryLight,
-        fontWeight: '700',
+        fontWeight: '600',
     },
 });

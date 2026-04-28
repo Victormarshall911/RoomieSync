@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { COLORS, SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function SettingsScreen() {
@@ -41,12 +41,12 @@ export default function SettingsScreen() {
 
     const SettingItem = ({ icon, title, value, onPress, color = COLORS.textPrimary }: any) => (
         <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={onPress}>
-            <Ionicons name={icon} size={22} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
+            <Ionicons name={icon} size={20} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
             <View style={styles.itemContent}>
                 <Text style={[styles.itemTitle, { color }]}>{title}</Text>
             </View>
-            {value && <Text style={styles.itemSubtitle}>{value}</Text>}
-            <Text style={styles.itemIcon}>→</Text>
+            {value && <Text style={styles.itemValue}>{value}</Text>}
+            <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
         </TouchableOpacity>
     );
 
@@ -102,7 +102,7 @@ export default function SettingsScreen() {
 
             <ScrollView contentContainerStyle={styles.content}>
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>APPEARANCE</Text>
+                    <Text style={styles.sectionTitle}>Appearance</Text>
                     <SettingItem
                         icon={isDark ? "moon-outline" : "sunny-outline"}
                         title="App Theme"
@@ -112,44 +112,51 @@ export default function SettingsScreen() {
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>ACCOUNT</Text>
+                    <Text style={styles.sectionTitle}>Account</Text>
 
                     <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={() => navigation.navigate('Verify')}>
+                        <Ionicons name="shield-checkmark-outline" size={20} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
                         <View style={styles.itemContent}>
                             <Text style={styles.itemTitle}>Verify Identity</Text>
                             <Text style={styles.itemSubtitle}>Upload ID to get verified badge</Text>
                         </View>
-                        <Text style={styles.itemIcon}>→</Text>
+                        <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={handleLogout}>
+                        <Ionicons name="log-out-outline" size={20} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
                         <View style={styles.itemContent}>
                             <Text style={styles.itemTitle}>Log Out</Text>
                             <Text style={styles.itemSubtitle}>Sign out of your account</Text>
                         </View>
-                        <Text style={styles.itemIcon}>→</Text>
+                        <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
                     </TouchableOpacity>
 
                     <TouchableOpacity style={[styles.item, styles.itemDanger]} activeOpacity={0.7} onPress={handleDeleteAccount}>
+                        <Ionicons name="trash-outline" size={20} color="#EF4444" style={{ marginRight: SPACING.md }} />
                         <View style={styles.itemContent}>
                             <Text style={[styles.itemTitle, styles.textDanger]}>Delete Account</Text>
-                            <Text style={styles.itemSubtitle}>Permamently remove all data</Text>
+                            <Text style={styles.itemSubtitle}>Permanently remove all data</Text>
                         </View>
-                        <Text style={[styles.itemIcon, styles.textDanger]}>🗑️</Text>
+                        <Ionicons name="chevron-forward" size={18} color="#EF4444" />
                     </TouchableOpacity>
                 </View>
 
                 <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>SUPPORT</Text>
+                    <Text style={styles.sectionTitle}>Support</Text>
                     <TouchableOpacity style={styles.item} activeOpacity={0.7}>
+                        <Ionicons name="help-circle-outline" size={20} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
                         <View style={styles.itemContent}>
                             <Text style={styles.itemTitle}>Help Center</Text>
                         </View>
+                        <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
                     </TouchableOpacity>
                     <TouchableOpacity style={styles.item} activeOpacity={0.7}>
+                        <Ionicons name="document-text-outline" size={20} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
                         <View style={styles.itemContent}>
                             <Text style={styles.itemTitle}>Terms of Service</Text>
                         </View>
+                        <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
                     </TouchableOpacity>
                 </View>
 
@@ -185,9 +192,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginBottom: SPACING.xl,
     },
     sectionTitle: {
-        ...FONTS.small,
+        ...FONTS.caption,
         color: COLORS.textMuted,
-        letterSpacing: 1.5,
+        fontWeight: '600',
         marginBottom: SPACING.md,
     },
     item: {
@@ -195,7 +202,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         alignItems: 'center',
         padding: SPACING.md,
         backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         marginBottom: SPACING.sm,
         borderWidth: 1,
         borderColor: COLORS.border,
@@ -216,9 +223,10 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.textMuted,
         marginTop: 2,
     },
-    itemIcon: {
+    itemValue: {
+        ...FONTS.caption,
         color: COLORS.textMuted,
-        fontSize: 18,
+        marginRight: SPACING.sm,
     },
     textDanger: {
         color: '#EF4444',

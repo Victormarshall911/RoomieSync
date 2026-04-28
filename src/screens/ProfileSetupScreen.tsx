@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
-import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
 export default function ProfileSetupScreen() {
     const navigation = useNavigation();
@@ -26,7 +25,7 @@ export default function ProfileSetupScreen() {
     };
 
     return (
-        <LinearGradient colors={isDark ? [COLORS.bg, '#16132B'] : [COLORS.bg, '#F1F5F9']} style={styles.container}>
+        <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
                 {/* Progress */}
                 <View style={styles.progressRow}>
@@ -37,7 +36,7 @@ export default function ProfileSetupScreen() {
                     <View style={styles.progressDot} />
                 </View>
 
-                <Text style={styles.stepLabel}>STEP 1 OF 3</Text>
+                <Text style={styles.stepLabel}>Step 1 of 3</Text>
                 <Text style={styles.title}>Basic Info</Text>
                 <Text style={styles.subtitle}>Tell us a bit about yourself</Text>
 
@@ -46,7 +45,7 @@ export default function ProfileSetupScreen() {
                     <InputField COLORS={COLORS} styles={styles} label="University" placeholder="e.g. UNILAG" value={university} onChangeText={setUniversity} />
                     <InputField COLORS={COLORS} styles={styles} label="Department" placeholder="e.g. Computer Science" value={department} onChangeText={setDepartment} />
 
-                    <Text style={styles.inputLabel}>GENDER</Text>
+                    <Text style={styles.inputLabel}>Gender</Text>
                     <View style={styles.genderContainer}>
                         {['Male', 'Female'].map((g) => (
                             <TouchableOpacity
@@ -56,26 +55,28 @@ export default function ProfileSetupScreen() {
                                 activeOpacity={0.7}
                             >
                                 <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>
-                                    {g === 'Male' ? '♂' : '♀'} {g}
+                                    {g}
                                 </Text>
                             </TouchableOpacity>
                         ))}
                     </View>
                 </View>
 
-                <TouchableOpacity onPress={handleNext} activeOpacity={0.85}>
-                    <LinearGradient colors={COLORS.gradientPrimary} style={styles.nextButton}>
-                        <Text style={styles.nextButtonText}>Continue →</Text>
-                    </LinearGradient>
+                <TouchableOpacity
+                    style={styles.nextButton}
+                    onPress={handleNext}
+                    activeOpacity={0.85}
+                >
+                    <Text style={styles.nextButtonText}>Continue</Text>
                 </TouchableOpacity>
             </ScrollView>
-        </LinearGradient>
+        </View>
     );
 }
 
 const InputField = ({ label, placeholder, value, onChangeText, keyboardType, COLORS, styles }: any) => (
     <View style={styles.inputGroup}>
-        <Text style={styles.inputLabel}>{label.toUpperCase()}</Text>
+        <Text style={styles.inputLabel}>{label}</Text>
         <View style={styles.inputWrapper}>
             <TextInput
                 style={styles.input}
@@ -90,7 +91,10 @@ const InputField = ({ label, placeholder, value, onChangeText, keyboardType, COL
 );
 
 const createStyles = (COLORS: any) => StyleSheet.create({
-    container: { flex: 1 },
+    container: {
+        flex: 1,
+        backgroundColor: COLORS.bg,
+    },
     content: { padding: SPACING.lg, paddingTop: 60 },
     progressRow: {
         flexDirection: 'row',
@@ -99,17 +103,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginBottom: SPACING.lg,
     },
     progressDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
         backgroundColor: COLORS.bgInput,
         borderWidth: 2,
         borderColor: COLORS.border,
     },
     progressActive: {
         backgroundColor: COLORS.primary,
-        borderColor: COLORS.primaryLight,
-        ...SHADOWS.card,
+        borderColor: COLORS.primary,
     },
     progressLine: {
         width: 40,
@@ -119,7 +122,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     stepLabel: {
         ...FONTS.small,
-        color: COLORS.primaryLight,
+        color: COLORS.textMuted,
         textAlign: 'center',
         marginBottom: SPACING.xs,
     },
@@ -136,7 +139,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     card: {
         backgroundColor: COLORS.bgCard,
-        borderRadius: RADIUS.xxl,
+        borderRadius: RADIUS.xl,
         padding: SPACING.lg,
         borderWidth: 1,
         borderColor: COLORS.border,
@@ -144,14 +147,13 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     inputGroup: { marginBottom: SPACING.md },
     inputLabel: {
-        ...FONTS.small,
+        ...FONTS.caption,
         color: COLORS.textSecondary,
-        marginBottom: SPACING.sm,
-        letterSpacing: 1,
+        marginBottom: 6,
     },
     inputWrapper: {
         backgroundColor: COLORS.bgInput,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
@@ -167,7 +169,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     genderButton: {
         flex: 1,
         padding: SPACING.md,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.border,
         alignItems: 'center',
@@ -185,15 +187,15 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.primaryLight,
     },
     nextButton: {
+        backgroundColor: COLORS.primary,
         padding: SPACING.md,
-        borderRadius: RADIUS.lg,
+        borderRadius: RADIUS.md,
         alignItems: 'center',
-        ...SHADOWS.button,
         marginBottom: SPACING.xxl,
     },
     nextButtonText: {
         color: '#FFFFFF',
         ...FONTS.bodyBold,
-        fontSize: 17,
+        fontSize: 16,
     },
 });
