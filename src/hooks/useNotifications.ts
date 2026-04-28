@@ -15,6 +15,15 @@ Notifications.setNotificationHandler({
 });
 
 export async function registerForPushNotificationsAsync() {
+    // Push notifications don't work in Expo Go (SDK 53+).
+    // They require a development build with a valid EAS projectId.
+    // In dev, we silently skip registration to avoid console spam.
+    const isExpoGo = Constants.appOwnership === 'expo';
+    if (isExpoGo) {
+        console.log('Push notifications are not supported in Expo Go. Skipping registration.');
+        return;
+    }
+
     let token;
 
     if (Platform.OS === 'android') {
@@ -34,7 +43,7 @@ export async function registerForPushNotificationsAsync() {
             finalStatus = status;
         }
         if (finalStatus !== 'granted') {
-            console.log('Failed to get push token for push notification!');
+            console.log('Push notification permission not granted.');
             return;
         }
 
@@ -43,14 +52,14 @@ export async function registerForPushNotificationsAsync() {
         const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 
         if (!projectId) {
-            console.warn('No projectId found in app.json. Push notifications will not work.');
+            console.log('No projectId found. Run `npx eas init` to configure push notifications.');
             return;
         }
 
         try {
             token = (await Notifications.getExpoPushTokenAsync({ projectId })).data;
         } catch (e) {
-            console.error('Error getting push token:', e);
+            console.log('Push token registration failed (expected in dev):', (e as Error).message);
             return;
         }
     } else {
