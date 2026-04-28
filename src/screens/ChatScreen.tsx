@@ -18,6 +18,23 @@ export default function ChatScreen() {
     const [messages, setMessages] = useState<any[]>([]);
     const [newMessage, setNewMessage] = useState('');
     const flatListRef = useRef<FlatList>(null);
+    const [otherProfile, setOtherProfile] = useState<any>(otherUser);
+
+    // Fetch the other user's full profile to get fresh is_verified status
+    useEffect(() => {
+        const fetchOtherProfile = async () => {
+            if (!otherUser?.id) return;
+            const { data, error } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', otherUser.id)
+                .single();
+            if (data && !error) {
+                setOtherProfile(data);
+            }
+        };
+        fetchOtherProfile();
+    }, [otherUser?.id]);
 
     useEffect(() => {
         if (!activeConversationId) return;
@@ -131,11 +148,18 @@ export default function ChatScreen() {
             {/* Header */}
             <View style={styles.header}>
                 <LinearGradient colors={COLORS.gradientPrimary} style={styles.headerAvatar}>
-                    <Text style={styles.headerAvatarText}>{otherUser?.full_name?.charAt(0)}</Text>
+                    <Text style={styles.headerAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
                 </LinearGradient>
                 <View style={styles.headerInfo}>
-                    <Text style={styles.headerName}>{otherUser?.full_name}</Text>
-                    <Text style={styles.headerMeta}>{otherUser?.university}</Text>
+                    <Text style={styles.headerName}>{otherProfile?.full_name}</Text>
+                    <View style={styles.headerMetaRow}>
+                        <Text style={styles.headerMeta}>{otherProfile?.university}</Text>
+                        {otherProfile?.is_verified && (
+                            <View style={styles.verifiedBadge}>
+                                <Text style={styles.verifiedBadgeText}>✓ Verified Student</Text>
+                            </View>
+                        )}
+                    </View>
                 </View>
             </View>
 
@@ -212,14 +236,33 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     headerInfo: {
         marginLeft: SPACING.md,
+        flex: 1,
     },
     headerName: {
         ...FONTS.bodyBold,
         color: COLORS.textPrimary,
     },
+    headerMetaRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+        marginTop: 2,
+    },
     headerMeta: {
         ...FONTS.small,
         color: COLORS.textSecondary,
+    },
+    verifiedBadge: {
+        backgroundColor: `${COLORS.success}18`,
+        paddingHorizontal: 6,
+        paddingVertical: 2,
+        borderRadius: RADIUS.sm,
+    },
+    verifiedBadgeText: {
+        ...FONTS.small,
+        color: COLORS.success,
+        fontWeight: '700',
+        fontSize: 10,
     },
     chatArea: {
         flex: 1,

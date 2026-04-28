@@ -122,7 +122,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     list: {
         paddingHorizontal: SPACING.md,
-        paddingBottom: 100,
+        paddingBottom: 80,
     },
     convItem: {
         flexDirection: 'row',

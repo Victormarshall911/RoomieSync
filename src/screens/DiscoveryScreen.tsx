@@ -212,8 +212,8 @@ export default function DiscoveryScreen() {
         );
     }
 
-    return (
-        <View style={styles.container}>
+    const listHeader = () => (
+        <>
             {/* Header */}
             <View style={styles.header}>
                 <View style={styles.headerTop}>
@@ -275,7 +275,11 @@ export default function DiscoveryScreen() {
                     </TouchableOpacity>
                 ))}
             </View>
+        </>
+    );
 
+    return (
+        <View style={styles.container}>
             <FlatList
                 data={filteredListings}
                 renderItem={renderItem}
@@ -286,6 +290,7 @@ export default function DiscoveryScreen() {
                 showsVerticalScrollIndicator={false}
                 onEndReached={handleLoadMore}
                 onEndReachedThreshold={0.5}
+                ListHeaderComponent={listHeader}
                 ListFooterComponent={renderFooter}
                 refreshControl={
                     <RefreshControl
@@ -431,7 +436,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     list: {
         paddingHorizontal: SPACING.md,
-        paddingBottom: 100,
+        paddingBottom: 80,
     },
     row: {
         justifyContent: 'space-between',
@@ -562,7 +567,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     fab: {
         position: 'absolute',
-        bottom: 100,
+        bottom: 84,
         right: SPACING.lg,
         width: 60,
         height: 60,
