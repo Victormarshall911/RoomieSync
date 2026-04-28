@@ -15,6 +15,7 @@ import CreateListingScreen from '../screens/CreateListingScreen';
 import EditProfileScreen from '../screens/EditProfileScreen';
 import ListingDetailScreen from '../screens/ListingDetailScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
+import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 import { useTheme } from '../context/ThemeContext';
 import { Profile } from '../utils/matching';
 
@@ -31,6 +32,7 @@ export type RootStackParamList = {
     EditProfile: undefined;
     ListingDetail: { listing: any };
     UserProfile: { profile: Profile };
+    TermsOfService: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -80,6 +82,7 @@ export default function AppNavigator() {
                         <Stack.Screen name="EditProfile" component={EditProfileScreen} />
                         <Stack.Screen name="ListingDetail" component={ListingDetailScreen} />
                         <Stack.Screen name="UserProfile" component={UserProfileScreen} />
+                        <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
                     </>
                 )}
             </Stack.Navigator>

@@ -144,14 +144,14 @@ export default function SettingsScreen() {
 
                 <View style={styles.section}>
                     <Text style={styles.sectionTitle}>Support</Text>
-                    <TouchableOpacity style={styles.item} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={() => Alert.alert('Help Center', 'Help Center is coming soon!')}>
                         <Ionicons name="help-circle-outline" size={20} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
                         <View style={styles.itemContent}>
                             <Text style={styles.itemTitle}>Help Center</Text>
                         </View>
                         <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.item} activeOpacity={0.7}>
+                    <TouchableOpacity style={styles.item} activeOpacity={0.7} onPress={() => navigation.navigate('TermsOfService')}>
                         <Ionicons name="document-text-outline" size={20} color={COLORS.textMuted} style={{ marginRight: SPACING.md }} />
                         <View style={styles.itemContent}>
                             <Text style={styles.itemTitle}>Terms of Service</Text>
