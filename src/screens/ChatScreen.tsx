@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, TextInput, FlatList, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -152,24 +152,36 @@ export default function ChatScreen() {
         );
     };
 
+    const navigation = useNavigation<any>();
+
     return (
         <View style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <View style={[styles.headerAvatar, { backgroundColor: avatarColor }]}>
-                    <Text style={styles.headerAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
-                </View>
-                <View style={styles.headerInfo}>
-                    <Text style={styles.headerName}>{otherProfile?.full_name}</Text>
-                    <View style={styles.headerMetaRow}>
-                        <Text style={styles.headerMeta}>{otherProfile?.university}</Text>
-                        {otherProfile?.is_verified && (
-                            <View style={styles.verifiedBadge}>
-                                <Text style={styles.verifiedBadgeText}>Verified</Text>
-                            </View>
-                        )}
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                    <Ionicons name="chevron-back" size={24} color={COLORS.textPrimary} />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                    style={styles.headerProfileLink} 
+                    onPress={() => navigation.navigate('UserProfile', { profile: otherProfile })}
+                    activeOpacity={0.7}
+                >
+                    <View style={[styles.headerAvatar, { backgroundColor: avatarColor }]}>
+                        <Text style={styles.headerAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
                     </View>
-                </View>
+                    <View style={styles.headerInfo}>
+                        <Text style={styles.headerName}>{otherProfile?.full_name}</Text>
+                        <View style={styles.headerMetaRow}>
+                            <Text style={styles.headerMeta}>{otherProfile?.university}</Text>
+                            {otherProfile?.is_verified && (
+                                <View style={styles.verifiedBadge}>
+                                    <Text style={styles.verifiedBadgeText}>Verified</Text>
+                                </View>
+                            )}
+                        </View>
+                    </View>
+                </TouchableOpacity>
             </View>
 
             {/* Messages */}
@@ -225,10 +237,23 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         alignItems: 'center',
         paddingTop: 56,
         paddingBottom: SPACING.md,
-        paddingHorizontal: SPACING.lg,
+        paddingHorizontal: SPACING.md,
         backgroundColor: COLORS.bgCard,
         borderBottomWidth: 1,
         borderBottomColor: COLORS.border,
+    },
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: SPACING.xs,
+    },
+    headerProfileLink: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     headerAvatar: {
         width: 40,

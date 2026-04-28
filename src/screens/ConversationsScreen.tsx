@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -14,33 +14,74 @@ const getAvatarColor = (name: string) => {
     return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
 };
 
+const formatRelativeTime = (dateString: string) => {
+    if (!dateString) return '';
+    const now = new Date();
+    const date = new Date(dateString);
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
+
+    if (diffInSeconds < 60) return 'Just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d`;
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+};
+
 export default function ConversationsScreen() {
     const { user } = useAuth();
-    const { colors: COLORS, isDark } = useTheme();
+    const { colors: COLORS } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const navigation = useNavigation();
     const [conversations, setConversations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-    useEffect(() => {
-        fetchConversations();
-    }, []);
-
-    const fetchConversations = async () => {
+    const fetchConversations = async (showLoading = true) => {
+        if (showLoading) setLoading(true);
         try {
+            // Fetch conversations with the latest message
             const { data, error } = await supabase
                 .from('conversations')
-                .select('*, profiles!conversations_user1_id_fkey(*), user2:profiles!conversations_user2_id_fkey(*), messages!inner(id)')
+                .select(`
+                    *,
+                    profiles!conversations_user1_id_fkey(*),
+                    user2:profiles!conversations_user2_id_fkey(*),
+                    messages(content, created_at, sender_id)
+                `)
                 .or(`user1_id.eq.${user?.id},user2_id.eq.${user?.id}`)
-                .order('created_at', { ascending: false })
-                .limit(1, { foreignTable: 'messages' });
+                .order('created_at', { ascending: false, foreignTable: 'messages' });
+
             if (error) throw error;
-            setConversations(data || []);
+
+            // Post-process to get only the latest message for each conversation
+            // and sort by that message's date
+            const processed = (data || []).map(conv => {
+                const lastMsg = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null;
+                return { ...conv, lastMsg };
+            }).sort((a, b) => {
+                const timeA = a.lastMsg ? new Date(a.lastMsg.created_at).getTime() : 0;
+                const timeB = b.lastMsg ? new Date(b.lastMsg.created_at).getTime() : 0;
+                return timeB - timeA;
+            });
+
+            setConversations(processed);
         } catch (error) {
-            console.error(error);
+            console.error('Error fetching conversations:', error);
         } finally {
             setLoading(false);
+            setRefreshing(false);
         }
+    };
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchConversations(false);
+        }, [user?.id])
+    );
+
+    const onRefresh = () => {
+        setRefreshing(true);
+        fetchConversations(false);
     };
 
     const renderItem = ({ item }: { item: any }) => {
@@ -48,6 +89,9 @@ export default function ConversationsScreen() {
         const otherUser = item.user1_id === user?.id ? item.user2 : item.profiles;
         const initial = otherUser?.full_name?.charAt(0) || '?';
         const avatarColor = getAvatarColor(otherUser?.full_name || '');
+        
+        const lastMsg = item.lastMsg;
+        const isUnread = lastMsg && lastMsg.sender_id !== user?.id; // Simple heuristic: if the last message isn't mine, show as unread (until we have a real read receipts system)
 
         return (
             <TouchableOpacity
@@ -62,15 +106,30 @@ export default function ConversationsScreen() {
                     <Text style={styles.avatarText}>{initial}</Text>
                 </View>
                 <View style={styles.convContent}>
-                    <Text style={styles.convName}>{otherUser?.full_name || 'Unknown'}</Text>
-                    <Text style={styles.convMeta}>{otherUser?.university || 'Tap to chat'}</Text>
+                    <View style={styles.convHeader}>
+                        <Text style={styles.convName} numberOfLines={1}>{otherUser?.full_name || 'Unknown'}</Text>
+                        {lastMsg && (
+                            <Text style={styles.convTime}>{formatRelativeTime(lastMsg.created_at)}</Text>
+                        )}
+                    </View>
+                    <View style={styles.convFooter}>
+                        <Text 
+                            style={[
+                                styles.convMessage, 
+                                isUnread && styles.convMessageUnread
+                            ]} 
+                            numberOfLines={1}
+                        >
+                            {lastMsg ? lastMsg.content : 'No messages yet'}
+                        </Text>
+                        {isUnread && <View style={styles.unreadDot} />}
+                    </View>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color={COLORS.textMuted} />
             </TouchableOpacity>
         );
     };
 
-    if (loading) {
+    if (loading && !refreshing) {
         return (
             <View style={[styles.container, styles.centered]}>
                 <ActivityIndicator size="large" color={COLORS.primary} />
@@ -91,6 +150,9 @@ export default function ConversationsScreen() {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
                 showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+                }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         <Ionicons name="chatbubbles-outline" size={48} color={COLORS.textMuted} style={{ marginBottom: SPACING.md }} />
@@ -141,29 +203,57 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         borderColor: COLORS.border,
     },
     avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: 22,
+        width: 52,
+        height: 52,
+        borderRadius: 26,
         alignItems: 'center',
         justifyContent: 'center',
     },
     avatarText: {
         color: '#FFFFFF',
-        fontSize: 17,
+        fontSize: 20,
         fontWeight: '600',
     },
     convContent: {
         flex: 1,
         marginLeft: SPACING.md,
     },
+    convHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 2,
+    },
     convName: {
         ...FONTS.bodyBold,
         color: COLORS.textPrimary,
+        flex: 1,
+        marginRight: SPACING.sm,
     },
-    convMeta: {
+    convTime: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
+    },
+    convFooter: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+    },
+    convMessage: {
         ...FONTS.caption,
         color: COLORS.textSecondary,
-        marginTop: 2,
+        flex: 1,
+    },
+    convMessageUnread: {
+        color: COLORS.textPrimary,
+        fontWeight: '600',
+    },
+    unreadDot: {
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: COLORS.primary,
+        marginLeft: SPACING.sm,
     },
     emptyContainer: {
         alignItems: 'center',

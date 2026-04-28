@@ -161,7 +161,11 @@ export default function DiscoveryScreen() {
         const avatarColor = getAvatarColor(creatorName);
 
         return (
-            <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={() => item.profiles && handleChat(item.profiles)}>
+            <TouchableOpacity 
+                style={styles.card} 
+                activeOpacity={0.85} 
+                onPress={() => navigation.navigate('ListingDetail', { listing: item })}
+            >
                 <View style={styles.cardHeader}>
                     <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
                         <Text style={styles.avatarText}>{creatorName.charAt(0)}</Text>
@@ -194,10 +198,6 @@ export default function DiscoveryScreen() {
                         <Text style={styles.budgetTagText}>₦{((item.price || 0) / 1000).toFixed(0)}k</Text>
                     </View>
                 </View>
-
-                <TouchableOpacity style={styles.chatButton} onPress={() => item.profiles && handleChat(item.profiles)}>
-                    <Text style={styles.chatButtonText}>{item.user_id ? 'Chat' : 'Demo Mode'}</Text>
-                </TouchableOpacity>
             </TouchableOpacity>
         );
     };
