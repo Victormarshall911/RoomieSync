@@ -4,7 +4,9 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useMessages } from '../context/MessageContext';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
 const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
@@ -18,6 +20,7 @@ export default function ChatScreen() {
     const route = useRoute();
     const { user } = useAuth();
     const { colors: COLORS, isDark } = useTheme();
+    const { refreshUnreadCount } = useMessages();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     // @ts-ignore
     const { conversationId, otherUser } = route.params;
@@ -43,10 +46,22 @@ export default function ChatScreen() {
         fetchOtherProfile();
     }, [otherUser?.id]);
 
+    const markAsRead = async () => {
+        if (!activeConversationId) return;
+        try {
+            await AsyncStorage.setItem(`last_read_${activeConversationId}`, new Date().toISOString());
+            refreshUnreadCount(); // Update global badge immediately
+        } catch (e) {
+            console.error('Error marking as read:', e);
+        }
+    };
+
     useEffect(() => {
         if (!activeConversationId) return;
 
         fetchMessages();
+        markAsRead(); // Mark as read when entering the chat
+
         const channel = supabase
             .channel(`messages:${activeConversationId}`)
             .on(
@@ -58,6 +73,7 @@ export default function ChatScreen() {
                         if (exists) return prev;
                         return [...prev, payload.new];
                     });
+                    markAsRead(); // Mark as read when receiving a message while in chat
                 }
             )
             .subscribe();

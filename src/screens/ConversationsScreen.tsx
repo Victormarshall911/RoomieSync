@@ -1,10 +1,11 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
 const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
@@ -33,12 +34,23 @@ export default function ConversationsScreen() {
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const navigation = useNavigation();
     const [conversations, setConversations] = useState<any[]>([]);
+    const [lastReadMap, setLastReadMap] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
 
     const fetchConversations = async (showLoading = true) => {
         if (showLoading) setLoading(true);
         try {
+            // Fetch last read timestamps from local storage
+            const allKeys = await AsyncStorage.getAllKeys();
+            const readKeys = allKeys.filter(k => k.startsWith('last_read_'));
+            const readPairs = await AsyncStorage.multiGet(readKeys);
+            const readMap: Record<string, string> = {};
+            readPairs.forEach(([key, val]) => {
+                if (val) readMap[key.replace('last_read_', '')] = val;
+            });
+            setLastReadMap(readMap);
+
             // Fetch conversations with the latest message
             const { data, error } = await supabase
                 .from('conversations')
@@ -79,6 +91,27 @@ export default function ConversationsScreen() {
         }, [user?.id])
     );
 
+    // Real-time updates for the conversation list
+    useEffect(() => {
+        if (!user) return;
+
+        const channel = supabase
+            .channel('conversations-list')
+            .on(
+                'postgres_changes',
+                { event: 'INSERT', schema: 'public', table: 'messages' },
+                () => {
+                    // Re-fetch conversations when any new message is sent/received
+                    fetchConversations(false);
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
+    }, [user?.id]);
+
     const onRefresh = () => {
         setRefreshing(true);
         fetchConversations(false);
@@ -91,7 +124,14 @@ export default function ConversationsScreen() {
         const avatarColor = getAvatarColor(otherUser?.full_name || '');
         
         const lastMsg = item.lastMsg;
-        const isUnread = lastMsg && lastMsg.sender_id !== user?.id; // Simple heuristic: if the last message isn't mine, show as unread (until we have a real read receipts system)
+        const lastReadAt = lastReadMap[item.id];
+        
+        // A message is unread if:
+        // 1. It's from the other user
+        // 2. AND we haven't read it (no timestamp) OR it was sent after we last read it
+        const isUnread = lastMsg && 
+                        lastMsg.sender_id !== user?.id && 
+                        (!lastReadAt || new Date(lastMsg.created_at) > new Date(lastReadAt));
 
         return (
             <TouchableOpacity

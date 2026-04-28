@@ -9,12 +9,14 @@ import SettingsScreen from '../screens/SettingsScreen';
 import AdminScreen from '../screens/AdminScreen';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useMessages } from '../context/MessageContext';
 
 const Tab = createBottomTabNavigator();
 
 export default function MainTabs() {
     const { profile } = useAuth();
     const { colors: COLORS, isDark } = useTheme();
+    const { unreadCount } = useMessages();
 
     return (
         <Tab.Navigator
@@ -66,7 +68,16 @@ export default function MainTabs() {
             <Tab.Screen
                 name="Messages"
                 component={ConversationsScreen}
-                options={{ tabBarLabel: 'Chats' }}
+                options={{ 
+                    tabBarLabel: 'Chats',
+                    tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
+                    tabBarBadgeStyle: {
+                        backgroundColor: COLORS.primary,
+                        color: '#FFFFFF',
+                        fontSize: 10,
+                        fontWeight: '700',
+                    }
+                }}
             />
             <Tab.Screen
                 name="Settings"
