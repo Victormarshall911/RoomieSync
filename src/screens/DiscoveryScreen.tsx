@@ -479,7 +479,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         justifyContent: 'center',
         borderWidth: 1,
         borderColor: COLORS.border,
-        ...SHADOWS.sm,
+        ...SHADOWS.card,
     },
     profileAvatarInner: {
         width: '100%',

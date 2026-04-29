@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Image, Platform } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -143,7 +143,11 @@ export default function ConversationsScreen() {
                 activeOpacity={0.7}
             >
                 <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                    <Text style={styles.avatarText}>{initial}</Text>
+                    {otherUser?.avatar_url ? (
+                        <Image source={{ uri: otherUser.avatar_url }} style={styles.avatarImage} />
+                    ) : (
+                        <Text style={styles.avatarText}>{initial}</Text>
+                    )}
                 </View>
                 <View style={styles.convContent}>
                     <View style={styles.convHeader}>
@@ -215,8 +219,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         alignItems: 'center',
     },
     header: {
-        paddingTop: 60,
-        paddingHorizontal: SPACING.lg,
+        paddingTop: 40, // Lifted up to match Discovery
+        paddingHorizontal: 12, // Match the corner padding
         paddingBottom: SPACING.md,
     },
     headerTitle: {
@@ -229,7 +233,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginTop: 2,
     },
     list: {
-        paddingHorizontal: SPACING.md,
+        paddingHorizontal: 12, // Match corners
         paddingBottom: 80,
     },
     convItem: {
@@ -248,6 +252,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         borderRadius: 26,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden', // Added for image
+    },
+    avatarImage: {
+        width: '100%',
+        height: '100%',
     },
     avatarText: {
         color: '#FFFFFF',
