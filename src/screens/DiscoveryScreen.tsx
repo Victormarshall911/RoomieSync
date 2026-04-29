@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl, Image } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl, Animated, Platform } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -48,6 +48,42 @@ export default function DiscoveryScreen() {
     const [error, setError] = useState<string | null>(null);
 
     const pageRef = useRef(0);
+
+    // Scroll-direction tracking for floating search bar
+    const scrollY = useRef(0);
+    const lastScrollY = useRef(0);
+    const floatingBarAnim = useRef(new Animated.Value(-140)).current; // hidden above screen
+    const [showFloatingBar, setShowFloatingBar] = useState(false);
+    const SCROLL_THRESHOLD = 200; // only show floating bar after scrolling past inline search
+
+    const handleScroll = useCallback((event: any) => {
+        const currentY = event.nativeEvent.contentOffset.y;
+        const isScrollingUp = currentY < lastScrollY.current;
+        const pastThreshold = currentY > SCROLL_THRESHOLD;
+
+        if (isScrollingUp && pastThreshold) {
+            if (!showFloatingBar) {
+                setShowFloatingBar(true);
+                Animated.spring(floatingBarAnim, {
+                    toValue: 0,
+                    useNativeDriver: true,
+                    tension: 80,
+                    friction: 12,
+                }).start();
+            }
+        } else if (!isScrollingUp || !pastThreshold) {
+            if (showFloatingBar) {
+                Animated.timing(floatingBarAnim, {
+                    toValue: -140,
+                    duration: 200,
+                    useNativeDriver: true,
+                }).start(() => setShowFloatingBar(false));
+            }
+        }
+
+        lastScrollY.current = currentY;
+        scrollY.current = currentY;
+    }, [showFloatingBar, floatingBarAnim]);
 
     const fetchListings = useCallback(async (isRefreshing = false) => {
         try {
@@ -225,15 +261,11 @@ export default function DiscoveryScreen() {
             <View style={styles.header}>
                 <View style={styles.headerTop}>
                     <View style={styles.headerInfo}>
-                        <Image
-                            source={require('../../assets/icon.png')}
-                            style={styles.headerLogo}
-                        />
                         <View>
-                            <Text style={styles.headerTitle}>Discover</Text>
-                            <Text style={styles.headerSubtitle}>
-                                {searchText ? `Found ${filteredListings.length} matches` : 'Find your perfect roommate'}
+                            <Text style={styles.headerGreeting}>
+                                {profile?.full_name ? `Hey, ${profile.full_name.split(' ')[0]} 👋` : 'Welcome 👋'}
                             </Text>
+                            <Text style={styles.headerTitle}>Discover</Text>
                         </View>
                     </View>
                     <TouchableOpacity
@@ -241,9 +273,16 @@ export default function DiscoveryScreen() {
                         onPress={() => navigation.navigate('Profile')}
                         activeOpacity={0.7}
                     >
-                        <Ionicons name="person-outline" size={20} color={COLORS.textSecondary} />
+                        <View style={styles.profileAvatarInner}>
+                            <Text style={styles.profileAvatarText}>
+                                {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                            </Text>
+                        </View>
                     </TouchableOpacity>
                 </View>
+                <Text style={styles.headerSubtitle}>
+                    {searchText ? `Found ${filteredListings.length} matches` : 'Find your perfect roommate'}
+                </Text>
             </View>
 
             {/* Error Message */}
@@ -297,6 +336,8 @@ export default function DiscoveryScreen() {
                 onEndReachedThreshold={0.5}
                 ListHeaderComponent={listHeader}
                 ListFooterComponent={renderFooter}
+                onScroll={handleScroll}
+                scrollEventThrottle={16}
                 refreshControl={
                     <RefreshControl
                         refreshing={refreshing}
@@ -313,6 +354,39 @@ export default function DiscoveryScreen() {
                     )
                 }
             />
+
+            {/* Floating Search & Filter Bar */}
+            <Animated.View
+                style={[
+                    styles.floatingBar,
+                    { transform: [{ translateY: floatingBarAnim }] },
+                ]}
+                pointerEvents={showFloatingBar ? 'auto' : 'none'}
+            >
+                <View style={styles.floatingSearchBar}>
+                    <Ionicons name="search" size={18} color={COLORS.textMuted} style={styles.searchIcon} />
+                    <TextInput
+                        style={styles.searchInput}
+                        placeholder="Search..."
+                        placeholderTextColor={COLORS.textMuted}
+                        value={searchText}
+                        onChangeText={setSearchText}
+                    />
+                </View>
+                <View style={styles.floatingFilterRow}>
+                    {[null, 'Looking for Roommate', 'Listing a Space'].map((s) => (
+                        <TouchableOpacity
+                            key={s || 'all'}
+                            style={[styles.filterChip, filterStatus === s && styles.filterChipActive]}
+                            onPress={() => setFilterStatus(s)}
+                        >
+                            <Text style={[styles.filterChipText, filterStatus === s && styles.filterChipTextActive]}>
+                                {s === 'Looking for Roommate' ? 'Roommate' : s === 'Listing a Space' ? 'Spaces' : 'All'}
+                            </Text>
+                        </TouchableOpacity>
+                    ))}
+                </View>
+            </Animated.View>
 
             {/* Floating Action Button */}
             <TouchableOpacity
@@ -338,7 +412,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         paddingTop: 80,
     },
     header: {
-        paddingTop: 60,
+        paddingTop: 56,
         paddingHorizontal: SPACING.lg,
         paddingBottom: SPACING.md,
     },
@@ -346,16 +420,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
+        marginBottom: 4,
     },
     headerInfo: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: SPACING.md,
     },
-    headerLogo: {
-        width: 40,
-        height: 40,
-        borderRadius: RADIUS.sm,
+    headerGreeting: {
+        ...FONTS.caption,
+        color: COLORS.textMuted,
+        marginBottom: 2,
     },
     headerTitle: {
         ...FONTS.h1,
@@ -364,16 +438,28 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     headerSubtitle: {
         ...FONTS.caption,
         color: COLORS.textSecondary,
+        marginTop: 4,
     },
     profileShortcut: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        backgroundColor: COLORS.bgCard,
-        borderWidth: 1,
-        borderColor: COLORS.border,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: COLORS.primary,
         alignItems: 'center',
         justifyContent: 'center',
+        ...SHADOWS.button,
+    },
+    profileAvatarInner: {
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    profileAvatarText: {
+        color: '#FFFFFF',
+        fontSize: 18,
+        fontWeight: '700',
     },
     errorBanner: {
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
@@ -415,6 +501,35 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         flexDirection: 'row',
         paddingHorizontal: SPACING.lg,
         marginBottom: SPACING.lg,
+        gap: SPACING.sm,
+    },
+    floatingBar: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        paddingTop: Platform.OS === 'ios' ? 54 : 36,
+        paddingHorizontal: SPACING.lg,
+        paddingBottom: SPACING.md,
+        backgroundColor: COLORS.bg,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.border,
+        zIndex: 100,
+        ...SHADOWS.card,
+    },
+    floatingSearchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.bgInput,
+        borderRadius: RADIUS.md,
+        paddingHorizontal: SPACING.md,
+        height: 42,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        marginBottom: SPACING.sm,
+    },
+    floatingFilterRow: {
+        flexDirection: 'row',
         gap: SPACING.sm,
     },
     filterChip: {
