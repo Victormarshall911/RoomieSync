@@ -87,29 +87,38 @@ export default function ChatScreen() {
         fetchMessages();
         markAsRead(); // Mark as read when entering the chat
 
-        // Use a unique channel name to prevent collision with stale channels
-        const channelName = `messages:${activeConversationId}:${Date.now()}`;
+        // Create a unique channel for this conversation
         const channel = supabase
-            .channel(channelName)
+            .channel(`room:${activeConversationId}`)
             .on(
                 'postgres_changes',
-                { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${activeConversationId}` },
+                { 
+                    event: 'INSERT', 
+                    schema: 'public', 
+                    table: 'messages', 
+                    filter: `conversation_id=eq.${activeConversationId}` 
+                },
                 (payload) => {
+                    console.log('Real-time message received:', payload.new.id);
                     setMessages((prev) => {
                         const exists = prev.find(m => m.id === payload.new.id);
                         if (exists) return prev;
                         return [...prev, payload.new];
                     });
-                    markAsRead(); // Mark as read when receiving a message while in chat
-                    // Auto-scroll only if user is near bottom
+                    markAsRead();
                     if (isNearBottom.current) {
                         setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
                     }
                 }
             )
-            .subscribe();
+            .subscribe((status) => {
+                console.log(`Subscription status for room:${activeConversationId}:`, status);
+            });
 
-        return () => { supabase.removeChannel(channel); };
+        return () => {
+            console.log('Cleaning up chat subscription...');
+            supabase.removeChannel(channel);
+        };
     }, [activeConversationId]);
 
     const fetchMessages = async () => {

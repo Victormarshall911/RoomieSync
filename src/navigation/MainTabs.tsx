@@ -1,4 +1,5 @@
 import React from 'react';
+import { Platform } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
@@ -27,13 +28,13 @@ export default function MainTabs() {
                 tabBarInactiveTintColor: COLORS.textMuted,
                 tabBarStyle: {
                     backgroundColor: isDark ? '#1A1A2E' : '#FFFFFF',
-                    height: 70,
+                    height: Platform.OS === 'ios' ? 88 : 72,
                     borderTopWidth: 1,
                     borderTopColor: COLORS.border,
                     elevation: 0,
                     shadowOpacity: 0,
-                    paddingBottom: 8,
-                    paddingTop: 6,
+                    paddingBottom: Platform.OS === 'ios' ? 30 : 12,
+                    paddingTop: 8,
                 },
                 tabBarLabelStyle: {
                     fontSize: 10,

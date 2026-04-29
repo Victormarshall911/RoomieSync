@@ -286,10 +286,14 @@ export default function DiscoveryScreen() {
                         onPress={() => navigation.navigate('Profile')}
                         activeOpacity={0.7}
                     >
-                        <View style={styles.profileAvatarInner}>
-                            <Text style={styles.profileAvatarText}>
-                                {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                            </Text>
+                        <View style={[styles.profileAvatarInner, { backgroundColor: getAvatarColor(profile?.full_name || '') }]}>
+                            {profile?.avatar_url ? (
+                                <Image source={{ uri: profile.avatar_url }} style={styles.profileAvatarImage} />
+                            ) : (
+                                <Text style={styles.profileAvatarText}>
+                                    {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
+                                </Text>
+                            )}
                         </View>
                     </TouchableOpacity>
                 </View>
@@ -425,15 +429,15 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         paddingTop: 80,
     },
     header: {
-        paddingTop: 56,
-        paddingHorizontal: SPACING.lg,
-        paddingBottom: SPACING.md,
+        paddingTop: 40,
+        paddingHorizontal: 12, // Pushed right to the edge
+        paddingBottom: SPACING.sm,
     },
     headerTop: {
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 4,
+        alignItems: 'flex-start',
+        marginBottom: 2,
     },
     headerInfo: {
         flex: 1,
@@ -441,7 +445,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     logoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
+        gap: 8, // Closer to text
     },
     smallLogoWrapper: {
         width: 46,
@@ -459,6 +463,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     headerTitle: {
         ...FONTS.h1,
         color: COLORS.textPrimary,
+        lineHeight: 32, // Better alignment
     },
     headerSubtitle: {
         ...FONTS.caption,
@@ -469,17 +474,24 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         width: 44,
         height: 44,
         borderRadius: 22,
-        backgroundColor: COLORS.primary,
+        backgroundColor: COLORS.bgCard, // Use card bg
         alignItems: 'center',
         justifyContent: 'center',
-        ...SHADOWS.button,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        ...SHADOWS.sm,
     },
     profileAvatarInner: {
-        width: 44,
-        height: 44,
+        width: '100%',
+        height: '100%',
         borderRadius: 22,
         alignItems: 'center',
         justifyContent: 'center',
+        overflow: 'hidden',
+    },
+    profileAvatarImage: {
+        width: '100%',
+        height: '100%',
     },
     profileAvatarText: {
         color: '#FFFFFF',
@@ -501,7 +513,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         textAlign: 'center',
     },
     searchContainer: {
-        paddingHorizontal: SPACING.lg,
+        paddingHorizontal: 12,
         marginBottom: SPACING.md,
     },
     searchBar: {
@@ -524,7 +536,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     filterRow: {
         flexDirection: 'row',
-        paddingHorizontal: SPACING.lg,
+        paddingHorizontal: 12,
         marginBottom: SPACING.lg,
         gap: SPACING.sm,
     },
@@ -533,8 +545,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        paddingTop: Platform.OS === 'ios' ? 54 : 36,
-        paddingHorizontal: SPACING.lg,
+        paddingTop: Platform.OS === 'ios' ? 48 : 36, // Match lifted header
+        paddingHorizontal: 12,
         paddingBottom: SPACING.md,
         backgroundColor: COLORS.bg,
         borderBottomWidth: 1,
