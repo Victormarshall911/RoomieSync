@@ -47,10 +47,12 @@ export default function AuthScreen() {
                 >
                     {/* Logo / Branding */}
                     <View style={styles.brandContainer}>
-                        <Image
-                            source={require('../../assets/icon.png')}
-                            style={styles.logoImage}
-                        />
+                        <View style={styles.logoWrapper}>
+                            <Image
+                                source={require('../../assets/logo.png')}
+                                style={styles.logoImage}
+                            />
+                        </View>
                         <Text style={styles.title}>RoomieSync</Text>
                         <Text style={styles.subtitle}>Find your perfect roommate match</Text>
                     </View>
@@ -137,11 +139,15 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         alignItems: 'center',
         marginBottom: SPACING.xl,
     },
-    logoImage: {
-        width: 72,
-        height: 72,
-        borderRadius: RADIUS.lg,
+    logoWrapper: {
+        width: 100,
+        height: 100,
         marginBottom: SPACING.md,
+    },
+    logoImage: {
+        width: '100%',
+        height: '100%',
+        borderRadius: 20,
     },
     title: {
         ...FONTS.h1,

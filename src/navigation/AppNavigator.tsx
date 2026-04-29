@@ -46,10 +46,16 @@ export default function AppNavigator() {
     if (loading) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
-                <Image
-                    source={require('../../assets/icon.png')}
-                    style={{ width: 80, height: 80, borderRadius: 20, marginBottom: 20 }}
-                />
+                <View style={{ 
+                    width: 90, 
+                    height: 90, 
+                    marginBottom: 24,
+                }}>
+                    <Image
+                        source={require('../../assets/logo.png')}
+                        style={{ width: '100%', height: '100%' }}
+                    />
+                </View>
                 <ActivityIndicator size="small" color={COLORS.primary} />
             </View>
         );

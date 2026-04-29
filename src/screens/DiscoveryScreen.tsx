@@ -266,11 +266,19 @@ export default function DiscoveryScreen() {
             <View style={styles.header}>
                 <View style={styles.headerTop}>
                     <View style={styles.headerInfo}>
-                        <View>
-                            <Text style={styles.headerGreeting}>
-                                {profile?.full_name ? `Hey, ${profile.full_name.split(' ')[0]} 👋` : 'Welcome 👋'}
-                            </Text>
-                            <Text style={styles.headerTitle}>Discover</Text>
+                        <View style={styles.logoRow}>
+                            <View style={styles.smallLogoWrapper}>
+                                <Image
+                                    source={require('../../assets/logo.png')}
+                                    style={styles.smallLogo}
+                                />
+                            </View>
+                            <View>
+                                <Text style={styles.headerGreeting}>
+                                    {profile?.full_name ? `Hey, ${profile.full_name.split(' ')[0]} 👋` : 'Welcome 👋'}
+                                </Text>
+                                <Text style={styles.headerTitle}>Discover</Text>
+                            </View>
                         </View>
                     </View>
                     <TouchableOpacity
@@ -428,8 +436,20 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginBottom: 4,
     },
     headerInfo: {
+        flex: 1,
+    },
+    logoRow: {
         flexDirection: 'row',
         alignItems: 'center',
+        gap: 12,
+    },
+    smallLogoWrapper: {
+        width: 46,
+        height: 46,
+    },
+    smallLogo: {
+        width: '100%',
+        height: '100%',
     },
     headerGreeting: {
         ...FONTS.caption,
