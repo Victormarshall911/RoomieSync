@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl, Animated, Platform } from 'react-native';
+import { Image } from 'expo-image';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -204,7 +205,11 @@ export default function DiscoveryScreen() {
             >
                 <View style={styles.cardHeader}>
                     <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                        <Text style={styles.avatarText}>{creatorName.charAt(0)}</Text>
+                        {item.profiles?.avatar_url ? (
+                            <Image source={{ uri: item.profiles.avatar_url }} style={styles.avatarImage} />
+                        ) : (
+                            <Text style={styles.avatarText}>{creatorName.charAt(0)}</Text>
+                        )}
                     </View>
                     <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
                 </View>
@@ -585,6 +590,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         fontSize: 18,
         fontWeight: '600',
         color: '#FFFFFF',
+    },
+    avatarImage: {
+        width: 44,
+        height: 44,
+        borderRadius: RADIUS.md,
     },
     matchText: {
         ...FONTS.small,

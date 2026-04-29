@@ -101,10 +101,51 @@ export default function ListingDetailScreen() {
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Header */}
                 <View style={styles.header}>
-                    <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
-                    </TouchableOpacity>
-                    <Text style={styles.headerTitle}>Listing Details</Text>
+                    <View style={styles.headerLeft}>
+                        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                            <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
+                        </TouchableOpacity>
+                        <Text style={styles.headerTitle}>Listing Details</Text>
+                    </View>
+                    {listing.user_id === user?.id && (
+                        <View style={styles.ownerActions}>
+                            <TouchableOpacity 
+                                onPress={() => navigation.navigate('EditListing', { listing })} 
+                                style={styles.actionButton}
+                            >
+                                <Ionicons name="create-outline" size={22} color={COLORS.primaryLight} />
+                            </TouchableOpacity>
+                            <TouchableOpacity 
+                                onPress={() => {
+                                    Alert.alert(
+                                        'Delete Listing',
+                                        'Are you sure you want to delete this listing?',
+                                        [
+                                            { text: 'Cancel', style: 'cancel' },
+                                            { 
+                                                text: 'Delete', 
+                                                style: 'destructive',
+                                                onPress: async () => {
+                                                    const { error } = await supabase
+                                                        .from('listings')
+                                                        .delete()
+                                                        .eq('id', listing.id);
+                                                    if (error) {
+                                                        Alert.alert('Error', error.message);
+                                                    } else {
+                                                        navigation.goBack();
+                                                    }
+                                                }
+                                            }
+                                        ]
+                                    );
+                                }} 
+                                style={styles.actionButton}
+                            >
+                                <Ionicons name="trash-outline" size={22} color={COLORS.accent} />
+                            </TouchableOpacity>
+                        </View>
+                    )}
                 </View>
 
                 {/* Title Card */}
@@ -225,7 +266,26 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         paddingHorizontal: SPACING.lg,
         flexDirection: 'row',
         alignItems: 'center',
+        justifyContent: 'space-between',
         marginBottom: SPACING.lg,
+    },
+    headerLeft: {
+        flexDirection: 'row',
+        alignItems: 'center',
+    },
+    ownerActions: {
+        flexDirection: 'row',
+        gap: SPACING.md,
+    },
+    actionButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: COLORS.bgCard,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.border,
     },
     backButton: {
         width: 40,

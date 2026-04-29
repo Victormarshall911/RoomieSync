@@ -3,6 +3,7 @@ import {
     View, Text, TextInput, FlatList, TouchableOpacity,
     StyleSheet, KeyboardAvoidingView, Platform, Animated, Keyboard
 } from 'react-native';
+import { Image } from 'expo-image';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -232,7 +233,11 @@ export default function ChatScreen() {
             <View style={[styles.msgRow, isMine && styles.msgRowMine]}>
                 {!isMine && (
                     <View style={[styles.msgAvatar, { backgroundColor: avatarColor }]}>
-                        <Text style={styles.msgAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
+                        {otherProfile?.avatar_url ? (
+                            <Image source={{ uri: otherProfile.avatar_url }} style={styles.msgAvatarImage} />
+                        ) : (
+                            <Text style={styles.msgAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
+                        )}
                     </View>
                 )}
                 <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleOther]}>
@@ -262,7 +267,11 @@ export default function ChatScreen() {
                     activeOpacity={0.7}
                 >
                     <View style={[styles.headerAvatar, { backgroundColor: avatarColor }]}>
-                        <Text style={styles.headerAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
+                        {otherProfile?.avatar_url ? (
+                            <Image source={{ uri: otherProfile.avatar_url }} style={styles.headerAvatarImage} />
+                        ) : (
+                            <Text style={styles.headerAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
+                        )}
                     </View>
                     <View style={styles.headerInfo}>
                         <View style={styles.headerNameRow}>
@@ -379,6 +388,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         fontSize: 17,
         fontWeight: '700',
     },
+    headerAvatarImage: {
+        width: 42,
+        height: 42,
+        borderRadius: 21,
+    },
     headerInfo: {
         marginLeft: SPACING.md,
         flex: 1,
@@ -447,6 +461,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 11,
         fontWeight: '700',
+    },
+    msgAvatarImage: {
+        width: 28,
+        height: 28,
+        borderRadius: 14,
     },
     bubble: {
         maxWidth: '75%',

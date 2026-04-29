@@ -1,6 +1,7 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import React, { useState, useCallback } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Alert, ScrollView, RefreshControl } from 'react-native';
+import { Image } from 'expo-image';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -19,6 +20,36 @@ export default function ProfileScreen() {
     const { colors: COLORS, isDark } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const navigation = useNavigation<any>();
+    const [refreshing, setRefreshing] = useState(false);
+    const [myListings, setMyListings] = useState<any[]>([]);
+
+    const fetchMyListings = useCallback(async () => {
+        if (!user) return;
+        try {
+            const { data, error } = await supabase
+                .from('listings')
+                .select('*, profiles(*)')
+                .eq('user_id', user.id)
+                .order('created_at', { ascending: false });
+
+            if (error) throw error;
+            setMyListings(data || []);
+        } catch (error: any) {
+            console.error('Error fetching my listings:', error);
+        }
+    }, [user]);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchMyListings();
+        }, [fetchMyListings])
+    );
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await Promise.all([fetchProfile(), fetchMyListings()]);
+        setRefreshing(false);
+    };
 
     const updateStatus = async (status: string) => {
         try {
@@ -38,7 +69,13 @@ export default function ProfileScreen() {
 
     return (
         <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+                contentContainerStyle={styles.content} 
+                showsVerticalScrollIndicator={false}
+                refreshControl={
+                    <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={COLORS.primary} />
+                }
+            >
                 {/* Header */}
                 <View style={styles.header}>
                     <Text style={styles.headerTitle}>My Profile</Text>
@@ -47,7 +84,11 @@ export default function ProfileScreen() {
 
                 <View style={styles.profileCard}>
                     <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                        <Text style={styles.avatarText}>{initial}</Text>
+                        {profile?.avatar_url ? (
+                            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
+                        ) : (
+                            <Text style={styles.avatarText}>{initial}</Text>
+                        )}
                     </View>
                     <Text style={styles.name}>{profile?.full_name || 'User'}</Text>
                     <Text style={styles.email}>{user?.email}</Text>
@@ -134,7 +175,23 @@ export default function ProfileScreen() {
                     <View style={styles.sectionHeader}>
                         <Text style={styles.sectionTitle}>Marketplace</Text>
                     </View>
-                    <Text style={styles.emptyText}>You haven't posted any rooms or ads yet.</Text>
+                    {myListings.length > 0 ? (
+                        myListings.map((l) => (
+                            <TouchableOpacity 
+                                key={l.id} 
+                                style={styles.listingItem}
+                                onPress={() => navigation.navigate('ListingDetail', { listing: l })}
+                            >
+                                <View style={styles.listingInfo}>
+                                    <Text style={styles.listingTitle} numberOfLines={1}>{l.title}</Text>
+                                    <Text style={styles.listingPrice}>₦{(l.price || 0).toLocaleString()}</Text>
+                                </View>
+                                <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+                            </TouchableOpacity>
+                        ))
+                    ) : (
+                        <Text style={styles.emptyText}>You haven't posted any rooms or ads yet.</Text>
+                    )}
                 </View>
 
                 {/* Lifestyle Section */}
@@ -223,6 +280,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 28,
         fontWeight: '700',
+    },
+    avatarImage: {
+        width: 72,
+        height: 72,
+        borderRadius: 36,
     },
     name: {
         ...FONTS.h2,
@@ -332,5 +394,25 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.body,
         color: COLORS.textMuted,
         textAlign: 'center',
+        paddingVertical: SPACING.md,
+    },
+    listingItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: SPACING.md,
+        borderBottomWidth: 1,
+        borderBottomColor: COLORS.borderLight,
+    },
+    listingInfo: {
+        flex: 1,
+    },
+    listingTitle: {
+        ...FONTS.bodyBold,
+        color: COLORS.textPrimary,
+    },
+    listingPrice: {
+        ...FONTS.caption,
+        color: COLORS.primaryLight,
+        marginTop: 2,
     },
 });

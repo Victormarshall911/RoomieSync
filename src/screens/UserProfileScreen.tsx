@@ -1,5 +1,6 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { Image } from 'expo-image';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -72,7 +73,11 @@ export default function UserProfileScreen() {
                 {/* Profile Hero */}
                 <View style={styles.heroCard}>
                     <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                        <Text style={styles.avatarText}>{viewedProfile.full_name?.charAt(0)}</Text>
+                        {viewedProfile.avatar_url ? (
+                            <Image source={{ uri: viewedProfile.avatar_url }} style={styles.avatarImage} />
+                        ) : (
+                            <Text style={styles.avatarText}>{viewedProfile.full_name?.charAt(0)}</Text>
+                        )}
                     </View>
                     <Text style={styles.name}>{viewedProfile.full_name}</Text>
                     <Text style={styles.meta}>
@@ -190,6 +195,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 32,
         fontWeight: '700',
+    },
+    avatarImage: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
     },
     name: {
         ...FONTS.h1,

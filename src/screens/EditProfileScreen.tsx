@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import { Image } from 'expo-image';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -22,6 +24,8 @@ export default function EditProfileScreen() {
     const { colors: COLORS } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const [saving, setSaving] = useState(false);
+    const [uploadingAvatar, setUploadingAvatar] = useState(false);
+    const [avatarUrl, setAvatarUrl] = useState(profile?.avatar_url || '');
 
     // Pre-fill from current profile
     const [fullName, setFullName] = useState(profile?.full_name || '');
@@ -35,6 +39,62 @@ export default function EditProfileScreen() {
     const [cleanliness, setCleanliness] = useState<number | null>(profile?.cleanliness || null);
     const [socializing, setSocializing] = useState(profile?.socializing || '');
     const [smoking, setSmoking] = useState(profile?.smoking || '');
+
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.5,
+            });
+
+            if (!result.canceled) {
+                uploadImage(result.assets[0].uri);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to pick image');
+        }
+    };
+
+    const uploadImage = async (uri: string) => {
+        setUploadingAvatar(true);
+        try {
+            const response = await fetch(uri);
+            const blob = await response.blob();
+            const reader = new FileReader();
+            
+            const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
+                reader.onload = () => resolve(reader.result as ArrayBuffer);
+                reader.onerror = reject;
+                reader.readAsArrayBuffer(blob);
+            });
+
+            const fileExt = uri.split('.').pop()?.toLowerCase();
+            const fileName = `avatar.${fileExt}`;
+            const filePath = `${user?.id}/${fileName}`;
+
+            const { error: uploadError } = await supabase.storage
+                .from('avatars')
+                .upload(filePath, arrayBuffer, {
+                    upsert: true,
+                    contentType: blob.type
+                });
+
+            if (uploadError) throw uploadError;
+
+            // Get public URL
+            const { data: { publicUrl } } = supabase.storage
+                .from('avatars')
+                .getPublicUrl(filePath);
+
+            setAvatarUrl(publicUrl);
+        } catch (error: any) {
+            Alert.alert('Error uploading image', error.message);
+        } finally {
+            setUploadingAvatar(false);
+        }
+    };
 
     const handleSave = async () => {
         if (!fullName.trim() || !university.trim()) {
@@ -58,6 +118,7 @@ export default function EditProfileScreen() {
                     cleanliness: cleanliness,
                     socializing: socializing || null,
                     smoking: smoking || null,
+                    avatar_url: avatarUrl,
                 })
                 .eq('id', user?.id);
 
@@ -87,6 +148,29 @@ export default function EditProfileScreen() {
                             <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Edit Profile</Text>
+                    </View>
+
+                    {/* Avatar Section */}
+                    <View style={styles.avatarSection}>
+                        <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} disabled={uploadingAvatar}>
+                            {avatarUrl ? (
+                                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
+                            ) : (
+                                <View style={[styles.avatarPlaceholder, { backgroundColor: COLORS.primaryFaded }]}>
+                                    <Text style={styles.avatarPlaceholderText}>
+                                        {fullName.charAt(0) || '?'}
+                                    </Text>
+                                </View>
+                            )}
+                            <View style={styles.editAvatarIcon}>
+                                {uploadingAvatar ? (
+                                    <ActivityIndicator size="small" color="#fff" />
+                                ) : (
+                                    <Ionicons name="camera" size={20} color="#fff" />
+                                )}
+                            </View>
+                        </TouchableOpacity>
+                        <Text style={styles.avatarHint}>Tap to change profile photo</Text>
                     </View>
 
                     {/* Basic Info */}
@@ -263,6 +347,53 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     headerTitle: {
         ...FONTS.h2,
         color: COLORS.textPrimary,
+    },
+    avatarSection: {
+        alignItems: 'center',
+        marginBottom: SPACING.xl,
+    },
+    avatarContainer: {
+        position: 'relative',
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        marginBottom: SPACING.sm,
+    },
+    avatarImage: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+    },
+    avatarPlaceholder: {
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    avatarPlaceholderText: {
+        fontSize: 40,
+        fontWeight: '700',
+        color: COLORS.primaryLight,
+    },
+    editAvatarIcon: {
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        backgroundColor: COLORS.primary,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: COLORS.bgCard,
+    },
+    avatarHint: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
     },
     section: {
         marginBottom: SPACING.md,
