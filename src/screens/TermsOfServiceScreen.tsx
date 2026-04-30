@@ -27,7 +27,7 @@ export default function TermsOfServiceScreen() {
             </View>
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                <Text style={styles.lastUpdated}>Last Updated: April 28, 2026</Text>
+                <Text style={styles.lastUpdated}>Last Updated: April 30, 2026</Text>
                 
                 <Text style={styles.intro}>
                     Welcome to RoomieSync. By using our application, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.
@@ -65,7 +65,7 @@ export default function TermsOfServiceScreen() {
 
                 <Section 
                     title="7. Account Termination" 
-                    content="We reserve the right to suspend or terminate your account at our sole discretion, without notice, for conduct that we believe violates these Terms or is harmful to other users or the platform."
+                    content="We reserve the right to suspend or terminate your account at our sole discretion, for conduct that we believe violates these Terms or is harmful to other users or the platform."
                 />
 
                 <Section 
