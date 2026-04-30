@@ -48,7 +48,6 @@ export default function VerificationScreen() {
             const fileName = `letter.${fileExt}`;
             const filePath = `${user?.id}/${fileName}`;
 
-            // Map common extensions to mime types
             const mimeMap: { [key: string]: string } = {
                 'pdf': 'application/pdf',
                 'jpg': 'image/jpeg',
