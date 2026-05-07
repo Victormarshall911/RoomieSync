@@ -16,7 +16,6 @@ import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 // Simple URL regex for link detection
 const URL_REGEX = /(https?:\/\/[^\s]+)/gi;
 
-// Format date for separators
 const formatDateLabel = (dateStr: string) => {
     const date = new Date(dateStr);
     const today = new Date();
@@ -109,7 +108,7 @@ export default function ChatScreen() {
         if (!activeConversationId) return;
 
         fetchMessages();
-        markAsRead(); // Mark as read when entering the chat
+        markAsRead();
 
         // Create a unique channel for this conversation
         const channel = supabase
