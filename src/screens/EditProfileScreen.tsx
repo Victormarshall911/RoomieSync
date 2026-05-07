@@ -7,7 +7,9 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, RADIUS, FONTS } from '../utils/theme';
+import Avatar from '../components/Avatar';
+import GradientButton from '../components/GradientButton';
+import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 const SLEEP_OPTIONS = ['Early Bird', 'Night Owl'];
 const CLEANLINESS_OPTIONS = [
@@ -153,15 +155,11 @@ export default function EditProfileScreen() {
                     {/* Avatar Section */}
                     <View style={styles.avatarSection}>
                         <TouchableOpacity style={styles.avatarContainer} onPress={pickImage} disabled={uploadingAvatar}>
-                            {avatarUrl ? (
-                                <Image source={{ uri: avatarUrl }} style={styles.avatarImage} />
-                            ) : (
-                                <View style={[styles.avatarPlaceholder, { backgroundColor: COLORS.primaryFaded }]}>
-                                    <Text style={styles.avatarPlaceholderText}>
-                                        {fullName.charAt(0) || '?'}
-                                    </Text>
-                                </View>
-                            )}
+                            <Avatar
+                                name={fullName || '?'}
+                                imageUrl={avatarUrl}
+                                size="xl"
+                            />
                             <View style={styles.editAvatarIcon}>
                                 {uploadingAvatar ? (
                                     <ActivityIndicator size="small" color="#fff" />
@@ -286,16 +284,12 @@ export default function EditProfileScreen() {
                     </View>
 
                     {/* Save Button */}
-                    <TouchableOpacity
-                        style={[styles.saveButton, saving && { opacity: 0.7 }]}
+                    <GradientButton
+                        title="Save Changes"
                         onPress={handleSave}
-                        disabled={saving}
-                        activeOpacity={0.85}
-                    >
-                        {saving ? <ActivityIndicator color="#fff" /> : (
-                            <Text style={styles.saveButtonText}>Save Changes</Text>
-                        )}
-                    </TouchableOpacity>
+                        loading={saving}
+                        style={{ marginHorizontal: SPACING.lg }}
+                    />
 
                     <View style={{ height: 40 }} />
                 </ScrollView>

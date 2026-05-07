@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
+import GradientButton from '../components/GradientButton';
 
 export default function CreateListingScreen() {
     const { user } = useAuth();
@@ -146,18 +147,11 @@ export default function CreateListingScreen() {
                             onChangeText={(v) => setFormData({ ...formData, description: v })}
                         />
 
-                        <TouchableOpacity
-                            style={[styles.submitButton, loading && { opacity: 0.7 }]}
+                        <GradientButton
+                            title="Post Listing"
                             onPress={handleSubmit}
-                            disabled={loading}
-                            activeOpacity={0.8}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.submitButtonText}>Post Listing</Text>
-                            )}
-                        </TouchableOpacity>
+                            loading={loading}
+                        />
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

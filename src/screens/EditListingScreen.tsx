@@ -6,6 +6,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
+import GradientButton from '../components/GradientButton';
 
 export default function EditListingScreen() {
     const { user } = useAuth();
@@ -149,18 +150,11 @@ export default function EditListingScreen() {
                             onChangeText={(v) => setFormData({ ...formData, description: v })}
                         />
 
-                        <TouchableOpacity
-                            style={[styles.submitButton, loading && { opacity: 0.7 }]}
+                        <GradientButton
+                            title="Save Changes"
                             onPress={handleSubmit}
-                            disabled={loading}
-                            activeOpacity={0.8}
-                        >
-                            {loading ? (
-                                <ActivityIndicator color="#fff" />
-                            ) : (
-                                <Text style={styles.submitButtonText}>Save Changes</Text>
-                            )}
-                        </TouchableOpacity>
+                            loading={loading}
+                        />
                     </View>
                 </ScrollView>
             </KeyboardAvoidingView>

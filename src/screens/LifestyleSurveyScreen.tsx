@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, RouteProp } from '@react-navigation/native';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
+import GradientButton from '../components/GradientButton';
 
 const LIFESTYLE_OPTIONS = {
     sleep_habit: {
@@ -39,11 +41,10 @@ const LIFESTYLE_OPTIONS = {
 };
 
 export default function LifestyleSurveyScreen() {
-    const route = useRoute();
+    const route = useRoute<RouteProp<RootStackParamList, 'LifestyleSurvey'>>();
     const { user, fetchProfile } = useAuth();
     const { colors: COLORS, isDark } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
-    // @ts-ignore
     const { profileData } = route.params;
 
     const [selections, setSelections] = useState<Record<string, any>>({});
@@ -127,16 +128,13 @@ export default function LifestyleSurveyScreen() {
                     </View>
                 ))}
 
-                <TouchableOpacity
-                    style={[styles.submitButton, !allSelected && styles.submitButtonDisabled]}
+                <GradientButton
+                    title="Complete Profile"
                     onPress={handleSubmit}
-                    disabled={!allSelected || loading}
-                    activeOpacity={0.85}
-                >
-                    {loading ? <ActivityIndicator color="#fff" /> : (
-                        <Text style={styles.submitButtonText}>Complete Profile</Text>
-                    )}
-                </TouchableOpacity>
+                    loading={loading}
+                    disabled={!allSelected}
+                    style={{ marginTop: SPACING.sm }}
+                />
             </ScrollView>
         </View>
     );

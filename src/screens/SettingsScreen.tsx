@@ -196,7 +196,7 @@ export default function SettingsScreen() {
                 <View style={styles.aboutSection}>
                     <Text style={styles.aboutAppName}>RoomieSync</Text>
                     <Text style={styles.aboutVersion}>Version {APP_VERSION}</Text>
-                    <Text style={styles.aboutTagline}>Made with ❤️ in Nigeria 🇳🇬</Text>
+                    <Text style={styles.aboutTagline}>Made with ❤️ by Victor Marshall 🇳🇬</Text>
                     <View style={styles.aboutLinks}>
                         <TouchableOpacity
                             onPress={() => Linking.openURL('https://roomiesync.app/privacy')}

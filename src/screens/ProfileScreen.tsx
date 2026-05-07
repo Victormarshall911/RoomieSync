@@ -8,12 +8,8 @@ import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
-const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
-const getAvatarColor = (name: string) => {
-    let hash = 0;
-    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
+import Avatar from '../components/Avatar';
+import InfoRow from '../components/InfoRow';
 
 export default function ProfileScreen() {
     const { user, profile, fetchProfile } = useAuth();
@@ -64,8 +60,7 @@ export default function ProfileScreen() {
         }
     };
 
-    const initial = profile?.full_name?.charAt(0) || '?';
-    const avatarColor = getAvatarColor(profile?.full_name || '');
+
 
     return (
         <View style={styles.container}>
@@ -83,22 +78,16 @@ export default function ProfileScreen() {
                 </View>
 
                 <View style={styles.profileCard}>
-                    <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                        {profile?.avatar_url ? (
-                            <Image source={{ uri: profile.avatar_url }} style={styles.avatarImage} />
-                        ) : (
-                            <Text style={styles.avatarText}>{initial}</Text>
-                        )}
-                    </View>
+                    <Avatar
+                        name={profile?.full_name || ''}
+                        imageUrl={profile?.avatar_url}
+                        size="xl"
+                        verified={profile?.is_verified}
+                    />
                     <Text style={styles.name}>{profile?.full_name || 'User'}</Text>
                     <Text style={styles.email}>{user?.email}</Text>
 
-                    {profile?.is_verified && (
-                        <View style={styles.verifiedBadge}>
-                            <Ionicons name="checkmark-circle" size={14} color={COLORS.success} style={{ marginRight: 4 }} />
-                            <Text style={styles.verifiedBadgeText}>Verified Student</Text>
-                        </View>
-                    )}
+
 
                     <TouchableOpacity
                         style={styles.editButton}
@@ -222,16 +211,7 @@ export default function ProfileScreen() {
     );
 }
 
-const InfoRow = ({ label, value }: { label: string; value?: string }) => {
-    const { colors: COLORS } = useTheme();
-    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
-    return (
-        <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{label}</Text>
-            <Text style={styles.infoValue}>{value || 'Not set'}</Text>
-        </View>
-    );
-};
+
 
 const createStyles = (COLORS: any) => StyleSheet.create({
     container: {

@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
+import GradientButton from '../components/GradientButton';
 
 export default function ProfileSetupScreen() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const { colors: COLORS, isDark } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const [fullName, setFullName] = useState('');
@@ -18,7 +21,6 @@ export default function ProfileSetupScreen() {
             Alert.alert('Error', 'Please fill in all fields');
             return;
         }
-        // @ts-ignore
         navigation.navigate('Preferences', {
             profileData: { fullName, university, department, gender }
         });
@@ -62,13 +64,10 @@ export default function ProfileSetupScreen() {
                     </View>
                 </View>
 
-                <TouchableOpacity
-                    style={styles.nextButton}
+                <GradientButton
+                    title="Continue"
                     onPress={handleNext}
-                    activeOpacity={0.85}
-                >
-                    <Text style={styles.nextButtonText}>Continue</Text>
-                </TouchableOpacity>
+                />
             </ScrollView>
         </View>
     );

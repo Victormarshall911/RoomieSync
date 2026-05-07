@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import { RootStackParamList } from '../navigation/AppNavigator';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
+import GradientButton from '../components/GradientButton';
 
 export default function PreferencesScreen() {
-    const navigation = useNavigation();
-    const route = useRoute();
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const route = useRoute<RouteProp<RootStackParamList, 'Preferences'>>();
     const { colors: COLORS, isDark } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
-    // @ts-ignore
     const { profileData } = route.params;
 
     const [budgetMin, setBudgetMin] = useState('200000');
@@ -21,7 +23,6 @@ export default function PreferencesScreen() {
             Alert.alert('Error', 'Please enter a location preference');
             return;
         }
-        // @ts-ignore
         navigation.navigate('LifestyleSurvey', {
             profileData: {
                 ...profileData,
@@ -92,13 +93,10 @@ export default function PreferencesScreen() {
                     </View>
                 </View>
 
-                <TouchableOpacity
-                    style={styles.nextButton}
+                <GradientButton
+                    title="Continue"
                     onPress={handleNext}
-                    activeOpacity={0.85}
-                >
-                    <Text style={styles.nextButtonText}>Continue</Text>
-                </TouchableOpacity>
+                />
             </ScrollView>
         </View>
     );
