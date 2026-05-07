@@ -4,15 +4,9 @@ import { Image } from 'expo-image';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import Avatar from '../components/Avatar';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
-
-const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
-const getAvatarColor = (name: string) => {
-    let hash = 0;
-    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
 
 export default function AdminScreen() {
     const { colors: COLORS, isDark } = useTheme();
@@ -102,7 +96,6 @@ export default function AdminScreen() {
 
 function VerificationCard({ item, handleVerify, COLORS, styles }: any) {
     const [imageUrl, setImageUrl] = useState<string | null>(null);
-    const avatarColor = getAvatarColor(item.full_name || '');
 
     useEffect(() => {
         async function getImageUrl() {
@@ -133,9 +126,10 @@ function VerificationCard({ item, handleVerify, COLORS, styles }: any) {
     return (
         <View style={styles.card}>
             <View style={styles.cardHeader}>
-                <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                    <Text style={styles.avatarText}>{item.full_name?.charAt(0)}</Text>
-                </View>
+                <Avatar
+                    name={item.full_name || ''}
+                    size="md"
+                />
                 <View style={styles.cardHeaderInfo}>
                     <Text style={styles.name}>{item.full_name}</Text>
                     <Text style={styles.detail}>{item.university} · {item.department}</Text>

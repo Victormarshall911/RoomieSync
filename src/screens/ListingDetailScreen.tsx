@@ -1,10 +1,12 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { calculateMatchPercentage, Profile } from '../utils/matching';
+import { getAvatarColor, getMatchColor, getMatchLabel } from '../utils/avatarUtils';
+import Avatar from '../components/Avatar';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 
@@ -25,23 +27,10 @@ export default function ListingDetailScreen() {
     const { listing } = route.params;
     const lister: Profile | undefined = listing.profiles;
     const creatorName = lister?.full_name || listing.creator_name_demo || 'User';
-    const avatarColor = getAvatarColor(creatorName);
 
     const matchPct = (myProfile && lister) ? calculateMatchPercentage(myProfile as Profile, lister) : 0;
-
-    const getMatchColor = (pct: number) => {
-        if (pct >= 80) return COLORS.success;
-        if (pct >= 60) return COLORS.primaryLight;
-        if (pct >= 40) return COLORS.accent;
-        return COLORS.textMuted;
-    };
-
-    const getMatchLabel = (pct: number) => {
-        if (pct >= 80) return 'Great match';
-        if (pct >= 60) return 'Good match';
-        if (pct >= 40) return 'Fair match';
-        return 'Low match';
-    };
+    const matchColor = getMatchColor(matchPct, COLORS);
+    const matchLabel = getMatchLabel(matchPct);
 
     const handleChat = async () => {
         if (!user || !lister) return;
@@ -189,16 +178,14 @@ export default function ListingDetailScreen() {
                 <TouchableOpacity style={styles.card} onPress={handleViewProfile} activeOpacity={lister ? 0.7 : 1}>
                     <Text style={styles.sectionLabel}>Listed by</Text>
                     <View style={styles.listerRow}>
-                        <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                            <Text style={styles.avatarText}>{creatorName.charAt(0)}</Text>
-                        </View>
+                        <Avatar
+                            name={creatorName}
+                            imageUrl={lister?.avatar_url}
+                            size="lg"
+                            verified={lister?.is_verified}
+                        />
                         <View style={styles.listerInfo}>
-                            <View style={styles.listerNameRow}>
                                 <Text style={styles.listerName}>{creatorName}</Text>
-                                {lister?.is_verified && (
-                                    <Ionicons name="checkmark-circle" size={16} color={COLORS.success} style={{ marginLeft: 4 }} />
-                                )}
-                            </View>
                             <Text style={styles.listerMeta}>
                                 {lister?.university || 'University not set'}
                                 {lister?.department ? ` · ${lister.department}` : ''}
@@ -214,8 +201,8 @@ export default function ListingDetailScreen() {
                         <View style={styles.matchHeader}>
                             <Text style={styles.sectionLabel}>Compatibility</Text>
                             <View style={styles.matchBadge}>
-                                <Text style={[styles.matchPctText, { color: getMatchColor(matchPct) }]}>{matchPct}%</Text>
-                                <Text style={[styles.matchLabelText, { color: getMatchColor(matchPct) }]}>{getMatchLabel(matchPct)}</Text>
+                            <Text style={[styles.matchPctText, { color: matchColor }]}>{matchPct}%</Text>
+                                <Text style={[styles.matchLabelText, { color: matchColor }]}>{matchLabel}</Text>
                             </View>
                         </View>
 

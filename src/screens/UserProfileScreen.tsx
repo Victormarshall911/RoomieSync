@@ -1,10 +1,12 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { Image } from 'expo-image';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { calculateMatchPercentage, Profile } from '../utils/matching';
+import { getMatchColor } from '../utils/avatarUtils';
+import Avatar from '../components/Avatar';
+import InfoRow from '../components/InfoRow';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import { supabase } from '../lib/supabase';
@@ -24,15 +26,8 @@ export default function UserProfileScreen() {
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
     const viewedProfile: Profile = route.params.profile;
-    const avatarColor = getAvatarColor(viewedProfile.full_name || '');
     const matchPct = myProfile ? calculateMatchPercentage(myProfile as Profile, viewedProfile) : 0;
-
-    const getMatchColor = (pct: number) => {
-        if (pct >= 80) return COLORS.success;
-        if (pct >= 60) return COLORS.primaryLight;
-        if (pct >= 40) return COLORS.accent;
-        return COLORS.textMuted;
-    };
+    const matchColor = getMatchColor(matchPct, COLORS);
 
     const handleChat = async () => {
         if (!user) return;
@@ -53,12 +48,7 @@ export default function UserProfileScreen() {
         }
     };
 
-    const InfoRow = ({ label, value }: { label: string; value?: string | number | null }) => (
-        <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>{label}</Text>
-            <Text style={styles.infoValue}>{value || 'Not set'}</Text>
-        </View>
-    );
+
 
     return (
         <View style={styles.container}>
@@ -72,13 +62,12 @@ export default function UserProfileScreen() {
 
                 {/* Profile Hero */}
                 <View style={styles.heroCard}>
-                    <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                        {viewedProfile.avatar_url ? (
-                            <Image source={{ uri: viewedProfile.avatar_url }} style={styles.avatarImage} />
-                        ) : (
-                            <Text style={styles.avatarText}>{viewedProfile.full_name?.charAt(0)}</Text>
-                        )}
-                    </View>
+                    <Avatar
+                        name={viewedProfile.full_name || ''}
+                        imageUrl={viewedProfile.avatar_url}
+                        size="xl"
+                        verified={viewedProfile.is_verified}
+                    />
                     <Text style={styles.name}>{viewedProfile.full_name}</Text>
                     <Text style={styles.meta}>
                         {viewedProfile.university}
@@ -86,15 +75,9 @@ export default function UserProfileScreen() {
                     </Text>
 
                     <View style={styles.badgesRow}>
-                        {viewedProfile.is_verified && (
-                            <View style={styles.verifiedBadge}>
-                                <Ionicons name="checkmark-circle" size={14} color={COLORS.success} style={{ marginRight: 4 }} />
-                                <Text style={styles.verifiedText}>Verified</Text>
-                            </View>
-                        )}
                         {matchPct > 0 && (
-                            <View style={[styles.matchBadge, { borderColor: getMatchColor(matchPct) }]}>
-                                <Text style={[styles.matchText, { color: getMatchColor(matchPct) }]}>{matchPct}% match</Text>
+                            <View style={[styles.matchBadge, { borderColor: matchColor }]}>
+                                <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}% match</Text>
                             </View>
                         )}
                     </View>
