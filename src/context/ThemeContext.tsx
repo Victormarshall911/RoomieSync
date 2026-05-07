@@ -10,6 +10,7 @@ interface ThemeContextType {
     colors: ThemeColors;
     isDark: boolean;
     setThemeMode: (mode: ThemeMode) => void;
+    toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -55,8 +56,12 @@ export const ThemeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
         }
     }, []);
 
+    const toggleTheme = useCallback(() => {
+        setThemeMode(isDark ? 'light' : 'dark');
+    }, [isDark, setThemeMode]);
+
     return (
-        <ThemeContext.Provider value={{ themeMode, colors, isDark, setThemeMode }}>
+        <ThemeContext.Provider value={{ themeMode, colors, isDark, setThemeMode, toggleTheme }}>
             {children}
         </ThemeContext.Provider>
     );
