@@ -1,7 +1,7 @@
 import 'react-native-url-polyfill/auto';
 import React from 'react';
 import { AuthProvider } from './src/context/AuthContext';
-import { ThemeProvider } from './src/context/ThemeContext';
+import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { MessageProvider } from './src/context/MessageContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
@@ -14,16 +14,25 @@ LogBox.ignoreLogs([
     'expo-notifications',
 ]);
 
+function AppContent() {
+    const { isDark } = useTheme();
+    return (
+        <>
+            <StatusBar style={isDark ? 'light' : 'dark'} />
+            <AuthProvider>
+                <MessageProvider>
+                    <AppNavigator />
+                </MessageProvider>
+            </AuthProvider>
+        </>
+    );
+}
+
 export default function App() {
     return (
         <ErrorBoundary>
             <ThemeProvider>
-                <AuthProvider>
-                    <MessageProvider>
-                        <StatusBar style="auto" />
-                        <AppNavigator />
-                    </MessageProvider>
-                </AuthProvider>
+                <AppContent />
             </ThemeProvider>
         </ErrorBoundary>
     );

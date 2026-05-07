@@ -1,10 +1,9 @@
-import React from 'react';
-import { Platform } from 'react-native';
+import React, { useRef } from 'react';
+import { Platform, Animated } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 import DiscoveryScreen from '../screens/DiscoveryScreen';
 import ConversationsScreen from '../screens/ConversationsScreen';
-import VerificationScreen from '../screens/VerificationScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import SettingsScreen from '../screens/SettingsScreen';
 import AdminScreen from '../screens/AdminScreen';
@@ -13,6 +12,25 @@ import { useTheme } from '../context/ThemeContext';
 import { useMessages } from '../context/MessageContext';
 
 const Tab = createBottomTabNavigator();
+
+function AnimatedTabIcon({ name, size, color, focused }: { name: any; size: number; color: string; focused: boolean }) {
+    const scaleAnim = useRef(new Animated.Value(1)).current;
+
+    React.useEffect(() => {
+        Animated.spring(scaleAnim, {
+            toValue: focused ? 1.15 : 1,
+            useNativeDriver: true,
+            tension: 200,
+            friction: 10,
+        }).start();
+    }, [focused]);
+
+    return (
+        <Animated.View style={{ transform: [{ scale: scaleAnim }] }}>
+            <Ionicons name={name} size={size - 4} color={color} />
+        </Animated.View>
+    );
+}
 
 export default function MainTabs() {
     const { profile } = useAuth();
@@ -51,13 +69,15 @@ export default function MainTabs() {
                         iconName = focused ? 'search' : 'search-outline';
                     } else if (route.name === 'Messages') {
                         iconName = focused ? 'chatbubbles' : 'chatbubbles-outline';
+                    } else if (route.name === 'MyProfile') {
+                        iconName = focused ? 'person' : 'person-outline';
                     } else if (route.name === 'Settings') {
                         iconName = focused ? 'settings' : 'settings-outline';
                     } else if (route.name === 'Admin') {
                         iconName = focused ? 'shield-checkmark' : 'shield-checkmark-outline';
                     }
 
-                    return <Ionicons name={iconName} size={size - 4} color={color} />;
+                    return <AnimatedTabIcon name={iconName} size={size} color={color} focused={focused} />;
                 },
             })}
         >
@@ -79,6 +99,11 @@ export default function MainTabs() {
                         fontWeight: '700',
                     }
                 }}
+            />
+            <Tab.Screen
+                name="MyProfile"
+                component={ProfileScreen}
+                options={{ tabBarLabel: 'Profile' }}
             />
             <Tab.Screen
                 name="Settings"

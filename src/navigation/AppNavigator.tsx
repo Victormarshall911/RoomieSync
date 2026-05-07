@@ -20,13 +20,26 @@ import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 import { useTheme } from '../context/ThemeContext';
 import { Profile } from '../utils/matching';
 
+export type ProfileSetupData = {
+    fullName: string;
+    university: string;
+    department: string;
+    gender: 'Male' | 'Female';
+};
+
+export type PreferencesData = ProfileSetupData & {
+    budgetMin: number;
+    budgetMax: number;
+    locationPreference: string;
+};
+
 export type RootStackParamList = {
     Auth: undefined;
     ProfileSetup: undefined;
-    Preferences: undefined;
-    LifestyleSurvey: undefined;
+    Preferences: { profileData: ProfileSetupData };
+    LifestyleSurvey: { profileData: PreferencesData };
     Main: undefined;
-    Chat: { conversationId: string; otherUser: Profile };
+    Chat: { conversationId: string | null; otherUser: Profile };
     Profile: undefined;
     Verify: undefined;
     CreateListing: undefined;

@@ -1,24 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View, Text, TextInput, FlatList, TouchableOpacity,
-    StyleSheet, KeyboardAvoidingView, Platform, Animated, Keyboard
+    StyleSheet, KeyboardAvoidingView, Platform, Animated, Linking
 } from 'react-native';
-import { Image } from 'expo-image';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useMessages } from '../context/MessageContext';
+import Avatar from '../components/Avatar';
 import { Ionicons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
-const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
-const getAvatarColor = (name: string) => {
-    let hash = 0;
-    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
+// Simple URL regex for link detection
+const URL_REGEX = /(https?:\/\/[^\s]+)/gi;
 
 // Format date for separators
 const formatDateLabel = (dateStr: string) => {
@@ -35,13 +31,41 @@ const formatDateLabel = (dateStr: string) => {
     return date.toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' });
 };
 
+/** Renders message text with tappable links */
+function MessageText({ text, isMine, styles }: { text: string; isMine: boolean; styles: any }) {
+    const parts = text.split(URL_REGEX);
+    if (parts.length <= 1) {
+        return <Text style={[styles.msgText, isMine && styles.msgTextMine]}>{text}</Text>;
+    }
+
+    return (
+        <Text style={[styles.msgText, isMine && styles.msgTextMine]}>
+            {parts.map((part, i) => {
+                if (URL_REGEX.test(part)) {
+                    URL_REGEX.lastIndex = 0; // Reset regex state
+                    return (
+                        <Text
+                            key={i}
+                            style={[styles.linkText, isMine && styles.linkTextMine]}
+                            onPress={() => Linking.openURL(part)}
+                        >
+                            {part}
+                        </Text>
+                    );
+                }
+                return part;
+            })}
+        </Text>
+    );
+}
+
 export default function ChatScreen() {
     const route = useRoute();
     const navigation = useNavigation<any>();
     const { user } = useAuth();
     const { colors: COLORS, isDark } = useTheme();
     const { refreshUnreadCount } = useMessages();
-    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+    const styles = React.useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
     // @ts-ignore
     const { conversationId, otherUser } = route.params;
     const [activeConversationId, setActiveConversationId] = useState<string | null>(conversationId);
@@ -99,7 +123,6 @@ export default function ChatScreen() {
                     filter: `conversation_id=eq.${activeConversationId}` 
                 },
                 (payload) => {
-                    console.log('Real-time message received:', payload.new.id);
                     setMessages((prev) => {
                         const exists = prev.find(m => m.id === payload.new.id);
                         if (exists) return prev;
@@ -111,12 +134,9 @@ export default function ChatScreen() {
                     }
                 }
             )
-            .subscribe((status) => {
-                console.log(`Subscription status for room:${activeConversationId}:`, status);
-            });
+            .subscribe();
 
         return () => {
-            console.log('Cleaning up chat subscription...');
             supabase.removeChannel(channel);
         };
     }, [activeConversationId]);
@@ -208,20 +228,29 @@ export default function ChatScreen() {
         isNearBottom.current = distanceFromBottom < 100;
     }, []);
 
-    const avatarColor = getAvatarColor(otherProfile?.full_name || '');
     const canSend = newMessage.trim().length > 0;
 
-    // Build messages with date separators
+    // Build messages with date separators and grouping info
     const messagesWithDates = React.useMemo(() => {
         const result: any[] = [];
         let lastDate = '';
-        messages.forEach((msg) => {
+        let lastSenderId = '';
+        messages.forEach((msg, idx) => {
             const msgDate = new Date(msg.created_at).toDateString();
             if (msgDate !== lastDate) {
                 result.push({ id: `date-${msgDate}`, type: 'date', label: formatDateLabel(msg.created_at) });
                 lastDate = msgDate;
+                lastSenderId = ''; // Reset grouping on new date
             }
-            result.push({ ...msg, type: 'message' });
+            // Check if this message should be grouped with the previous one
+            const isGrouped = msg.sender_id === lastSenderId;
+            // Check if the next message is from the same sender (for tail)
+            const nextMsg = messages[idx + 1];
+            const isLastInGroup = !nextMsg || nextMsg.sender_id !== msg.sender_id ||
+                new Date(nextMsg.created_at).toDateString() !== msgDate;
+            
+            result.push({ ...msg, type: 'message', isGrouped, isLastInGroup });
+            lastSenderId = msg.sender_id;
         });
         return result;
     }, [messages]);
@@ -238,19 +267,29 @@ export default function ChatScreen() {
         }
 
         const isMine = item.sender_id === user?.id;
+        const showAvatar = !isMine && item.isLastInGroup;
+
         return (
-            <View style={[styles.msgRow, isMine && styles.msgRowMine]}>
+            <View style={[
+                styles.msgRow,
+                isMine && styles.msgRowMine,
+                item.isGrouped && styles.msgRowGrouped,
+            ]}>
                 {!isMine && (
-                    <View style={[styles.msgAvatar, { backgroundColor: avatarColor }]}>
-                        {otherProfile?.avatar_url ? (
-                            <Image source={{ uri: otherProfile.avatar_url }} style={styles.msgAvatarImage} />
+                    <View style={styles.msgAvatarSlot}>
+                        {showAvatar ? (
+                            <Avatar
+                                name={otherProfile?.full_name || ''}
+                                imageUrl={otherProfile?.avatar_url}
+                                size="xs"
+                            />
                         ) : (
-                            <Text style={styles.msgAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
+                            <View style={{ width: 28 }} />
                         )}
                     </View>
                 )}
                 <View style={[styles.bubble, isMine ? styles.bubbleMine : styles.bubbleOther]}>
-                    <Text style={[styles.msgText, isMine && styles.msgTextMine]}>{item.content}</Text>
+                    <MessageText text={item.content} isMine={isMine} styles={styles} />
                     <View style={styles.msgMeta}>
                         <Text style={[styles.msgTime, isMine && styles.msgTimeMine]}>{formatTime(item.created_at)}</Text>
                         {isMine && (
@@ -275,20 +314,14 @@ export default function ChatScreen() {
                     onPress={() => navigation.navigate('UserProfile', { profile: otherProfile })}
                     activeOpacity={0.7}
                 >
-                    <View style={[styles.headerAvatar, { backgroundColor: avatarColor }]}>
-                        {otherProfile?.avatar_url ? (
-                            <Image source={{ uri: otherProfile.avatar_url }} style={styles.headerAvatarImage} />
-                        ) : (
-                            <Text style={styles.headerAvatarText}>{otherProfile?.full_name?.charAt(0)}</Text>
-                        )}
-                    </View>
+                    <Avatar
+                        name={otherProfile?.full_name || ''}
+                        imageUrl={otherProfile?.avatar_url}
+                        size="md"
+                        verified={otherProfile?.is_verified}
+                    />
                     <View style={styles.headerInfo}>
-                        <View style={styles.headerNameRow}>
-                            <Text style={styles.headerName} numberOfLines={1}>{otherProfile?.full_name}</Text>
-                            {otherProfile?.is_verified && (
-                                <Ionicons name="checkmark-circle" size={16} color={COLORS.success} style={{ marginLeft: 4 }} />
-                            )}
-                        </View>
+                        <Text style={styles.headerName} numberOfLines={1}>{otherProfile?.full_name}</Text>
                         <Text style={styles.headerMeta} numberOfLines={1}>{otherProfile?.university}</Text>
                     </View>
                 </TouchableOpacity>
@@ -357,7 +390,7 @@ export default function ChatScreen() {
     );
 }
 
-const createStyles = (COLORS: any) => StyleSheet.create({
+const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -385,30 +418,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    headerAvatar: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    headerAvatarText: {
-        color: '#FFFFFF',
-        fontSize: 17,
-        fontWeight: '700',
-    },
-    headerAvatarImage: {
-        width: 42,
-        height: 42,
-        borderRadius: 21,
-    },
     headerInfo: {
         marginLeft: SPACING.md,
         flex: 1,
-    },
-    headerNameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
     },
     headerName: {
         ...FONTS.bodyBold,
@@ -458,23 +470,12 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     msgRowMine: {
         justifyContent: 'flex-end',
     },
-    msgAvatar: {
+    msgRowGrouped: {
+        marginBottom: 2, // Tighter spacing for grouped messages
+    },
+    msgAvatarSlot: {
         width: 28,
-        height: 28,
-        borderRadius: 14,
-        alignItems: 'center',
-        justifyContent: 'center',
         marginRight: SPACING.sm,
-    },
-    msgAvatarText: {
-        color: '#FFFFFF',
-        fontSize: 11,
-        fontWeight: '700',
-    },
-    msgAvatarImage: {
-        width: 28,
-        height: 28,
-        borderRadius: 14,
     },
     bubble: {
         maxWidth: '75%',
@@ -499,6 +500,13 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     msgTextMine: {
         color: '#FFFFFF',
+    },
+    linkText: {
+        textDecorationLine: 'underline',
+        color: isDark ? '#93C5FD' : '#2563EB',
+    },
+    linkTextMine: {
+        color: 'rgba(255,255,255,0.9)',
     },
     msgMeta: {
         flexDirection: 'row',

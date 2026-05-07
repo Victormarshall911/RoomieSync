@@ -14,6 +14,9 @@ export interface Profile {
     avatar_url?: string;
     is_verified: boolean;
     searching_for?: 'Looking for Roommate' | 'Listing a Space' | 'Already Matched';
+    school_id_url?: string;
+    push_token?: string;
+    is_admin?: boolean;
     has_room_info?: {
         price?: number;
         location?: string;

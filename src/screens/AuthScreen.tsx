@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, ScrollView, Image, Animated } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../lib/supabase';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
@@ -9,8 +11,14 @@ export default function AuthScreen() {
     const [password, setPassword] = useState('');
     const [loading, setLoading] = useState(false);
     const [isSignUp, setIsSignUp] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
+    const [emailFocused, setEmailFocused] = useState(false);
+    const [passwordFocused, setPasswordFocused] = useState(false);
     const { colors: COLORS, isDark } = useTheme();
-    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+    const styles = React.useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
+
+    // Animated scale for submit button
+    const buttonScale = useRef(new Animated.Value(1)).current;
 
     async function handleAuth() {
         if (!email || !password) {
@@ -18,6 +26,13 @@ export default function AuthScreen() {
             return;
         }
         setLoading(true);
+
+        // Animate button
+        Animated.sequence([
+            Animated.timing(buttonScale, { toValue: 0.96, duration: 80, useNativeDriver: true }),
+            Animated.spring(buttonScale, { toValue: 1, useNativeDriver: true, tension: 200, friction: 10 }),
+        ]).start();
+
         try {
             if (isSignUp) {
                 const { error } = await supabase.auth.signUp({ email, password });
@@ -36,6 +51,15 @@ export default function AuthScreen() {
 
     return (
         <View style={styles.container}>
+            <LinearGradient
+                colors={isDark 
+                    ? ['rgba(108, 58, 237, 0.15)', 'rgba(15, 15, 26, 1)', 'rgba(15, 15, 26, 1)']
+                    : ['rgba(108, 58, 237, 0.08)', 'rgba(248, 250, 252, 1)', 'rgba(248, 250, 252, 1)']
+                }
+                style={StyleSheet.absoluteFill}
+                start={{ x: 0.5, y: 0 }}
+                end={{ x: 0.5, y: 0.6 }}
+            />
             <KeyboardAvoidingView
                 behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
                 style={styles.keyboardView}
@@ -60,10 +84,22 @@ export default function AuthScreen() {
                     {/* Auth Card */}
                     <View style={styles.card}>
                         <Text style={styles.cardTitle}>{isSignUp ? 'Create Account' : 'Welcome Back'}</Text>
+                        <Text style={styles.cardSubtitle}>
+                            {isSignUp ? 'Sign up to start matching' : 'Log in to continue'}
+                        </Text>
 
                         <View style={styles.inputContainer}>
                             <Text style={styles.inputLabel}>Email</Text>
-                            <View style={styles.inputWrapper}>
+                            <View style={[
+                                styles.inputWrapper,
+                                emailFocused && styles.inputWrapperFocused,
+                            ]}>
+                                <Ionicons
+                                    name="mail-outline"
+                                    size={18}
+                                    color={emailFocused ? COLORS.primaryLight : COLORS.textMuted}
+                                    style={styles.inputIcon}
+                                />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="you@university.edu"
@@ -72,34 +108,67 @@ export default function AuthScreen() {
                                     onChangeText={setEmail}
                                     autoCapitalize="none"
                                     keyboardType="email-address"
+                                    onFocus={() => setEmailFocused(true)}
+                                    onBlur={() => setEmailFocused(false)}
                                 />
                             </View>
                         </View>
 
                         <View style={styles.inputContainer}>
                             <Text style={styles.inputLabel}>Password</Text>
-                            <View style={styles.inputWrapper}>
+                            <View style={[
+                                styles.inputWrapper,
+                                passwordFocused && styles.inputWrapperFocused,
+                            ]}>
+                                <Ionicons
+                                    name="lock-closed-outline"
+                                    size={18}
+                                    color={passwordFocused ? COLORS.primaryLight : COLORS.textMuted}
+                                    style={styles.inputIcon}
+                                />
                                 <TextInput
                                     style={styles.input}
                                     placeholder="Enter your password"
                                     placeholderTextColor={COLORS.textMuted}
                                     value={password}
                                     onChangeText={setPassword}
-                                    secureTextEntry
+                                    secureTextEntry={!showPassword}
+                                    onFocus={() => setPasswordFocused(true)}
+                                    onBlur={() => setPasswordFocused(false)}
                                 />
+                                <TouchableOpacity
+                                    onPress={() => setShowPassword(!showPassword)}
+                                    style={styles.eyeButton}
+                                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                                >
+                                    <Ionicons
+                                        name={showPassword ? 'eye-off-outline' : 'eye-outline'}
+                                        size={20}
+                                        color={COLORS.textMuted}
+                                    />
+                                </TouchableOpacity>
                             </View>
                         </View>
 
-                        <TouchableOpacity
-                            style={[styles.button, loading && { opacity: 0.7 }]}
-                            onPress={handleAuth}
-                            disabled={loading}
-                            activeOpacity={0.85}
-                        >
-                            {loading ? <ActivityIndicator color="#fff" /> : (
-                                <Text style={styles.buttonText}>{isSignUp ? 'Sign Up' : 'Login'}</Text>
-                            )}
-                        </TouchableOpacity>
+                        <Animated.View style={{ transform: [{ scale: buttonScale }] }}>
+                            <TouchableOpacity
+                                style={[styles.button, loading && { opacity: 0.7 }]}
+                                onPress={handleAuth}
+                                disabled={loading}
+                                activeOpacity={0.85}
+                            >
+                                <LinearGradient
+                                    colors={COLORS.gradientPrimary}
+                                    start={{ x: 0, y: 0 }}
+                                    end={{ x: 1, y: 1 }}
+                                    style={styles.buttonGradient}
+                                >
+                                    {loading ? <ActivityIndicator color="#fff" /> : (
+                                        <Text style={styles.buttonText}>{isSignUp ? 'Sign Up' : 'Login'}</Text>
+                                    )}
+                                </LinearGradient>
+                            </TouchableOpacity>
+                        </Animated.View>
 
                         <View style={styles.dividerRow}>
                             <View style={styles.divider} />
@@ -120,7 +189,7 @@ export default function AuthScreen() {
     );
 }
 
-const createStyles = (COLORS: any) => StyleSheet.create({
+const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -143,31 +212,41 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         width: 100,
         height: 100,
         marginBottom: SPACING.md,
+        borderRadius: 24,
+        overflow: 'hidden',
+        ...SHADOWS.button,
     },
     logoImage: {
         width: '100%',
         height: '100%',
-        borderRadius: 20,
     },
     title: {
         ...FONTS.h1,
+        fontSize: 32,
         color: COLORS.textPrimary,
         marginBottom: SPACING.xs,
+        letterSpacing: -0.5,
     },
     subtitle: {
         ...FONTS.caption,
         color: COLORS.textSecondary,
     },
     card: {
-        backgroundColor: COLORS.bgCard,
+        backgroundColor: isDark ? 'rgba(26, 26, 46, 0.85)' : 'rgba(255, 255, 255, 0.9)',
         borderRadius: RADIUS.xl,
         padding: SPACING.lg,
         borderWidth: 1,
         borderColor: COLORS.border,
+        ...SHADOWS.card,
     },
     cardTitle: {
         ...FONTS.h2,
         color: COLORS.textPrimary,
+        marginBottom: 4,
+    },
+    cardSubtitle: {
+        ...FONTS.caption,
+        color: COLORS.textMuted,
         marginBottom: SPACING.lg,
     },
     inputContainer: {
@@ -177,24 +256,42 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.caption,
         color: COLORS.textSecondary,
         marginBottom: 6,
+        fontWeight: '500',
     },
     inputWrapper: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: COLORS.bgInput,
         borderRadius: RADIUS.md,
-        borderWidth: 1,
+        borderWidth: 1.5,
         borderColor: COLORS.border,
     },
+    inputWrapperFocused: {
+        borderColor: COLORS.primaryLight,
+        backgroundColor: isDark ? 'rgba(108, 58, 237, 0.06)' : 'rgba(108, 58, 237, 0.04)',
+    },
+    inputIcon: {
+        marginLeft: SPACING.md,
+    },
     input: {
+        flex: 1,
         padding: SPACING.md,
         ...FONTS.body,
         color: COLORS.textPrimary,
     },
+    eyeButton: {
+        paddingHorizontal: SPACING.md,
+        paddingVertical: SPACING.sm,
+    },
     button: {
-        backgroundColor: COLORS.primary,
-        padding: SPACING.md,
         borderRadius: RADIUS.md,
-        alignItems: 'center',
+        overflow: 'hidden',
         marginTop: SPACING.sm,
+    },
+    buttonGradient: {
+        padding: SPACING.md,
+        alignItems: 'center',
+        borderRadius: RADIUS.md,
     },
     buttonText: {
         color: '#FFFFFF',

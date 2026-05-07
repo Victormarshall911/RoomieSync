@@ -6,18 +6,12 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { calculateMatchPercentage, Profile } from '../utils/matching';
+import { getAvatarColor, getMatchColor } from '../utils/avatarUtils';
+import Avatar from '../components/Avatar';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
 const PAGE_SIZE = 10;
-
-// Deterministic avatar color from name
-const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
-const getAvatarColor = (name: string) => {
-    let hash = 0;
-    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
 
 export interface Listing {
     id: string;
@@ -33,11 +27,46 @@ export interface Listing {
     profiles?: Profile; // Joined profile
 }
 
+// Animated card wrapper for staggered entry
+function AnimatedCard({ index, children, style }: { index: number; children: React.ReactNode; style: any }) {
+    const fadeAnim = useRef(new Animated.Value(0)).current;
+    const slideAnim = useRef(new Animated.Value(20)).current;
+
+    useEffect(() => {
+        const delay = Math.min(index * 60, 300); // Cap max delay
+        Animated.parallel([
+            Animated.timing(fadeAnim, {
+                toValue: 1,
+                duration: 350,
+                delay,
+                useNativeDriver: true,
+            }),
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 350,
+                delay,
+                useNativeDriver: true,
+            }),
+        ]).start();
+    }, []);
+
+    return (
+        <Animated.View
+            style={[
+                style,
+                { opacity: fadeAnim, transform: [{ translateY: slideAnim }] },
+            ]}
+        >
+            {children}
+        </Animated.View>
+    );
+}
+
 export default function DiscoveryScreen() {
     const { user, profile } = useAuth();
     const navigation = useNavigation<any>();
     const { colors: COLORS, isDark } = useTheme();
-    const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+    const styles = React.useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
 
     const [listings, setListings] = useState<Listing[]>([]);
     const [loading, setLoading] = useState(true);
@@ -149,33 +178,6 @@ export default function DiscoveryScreen() {
         }
     };
 
-    const handleChat = async (otherProfile: Profile) => {
-        if (!user) return;
-
-        try {
-            setLoading(true);
-            const { data: existingConvos, error: convoError } = await supabase
-                .from('conversations')
-                .select('*')
-                .or(`and(user1_id.eq.${user.id},user2_id.eq.${otherProfile.id}),and(user1_id.eq.${otherProfile.id},user2_id.eq.${user.id})`)
-                .maybeSingle();
-
-            if (convoError) throw convoError;
-
-            if (existingConvos) {
-                navigation.navigate('Chat', { conversationId: existingConvos.id, otherUser: otherProfile });
-            } else {
-                // Navigate without an ID; ChatScreen will create it on first message
-                navigation.navigate('Chat', { conversationId: null, otherUser: otherProfile });
-            }
-        } catch (err: any) {
-            console.error('Error handling chat navigation:', err);
-            setError('Could not access conversation. Please try again.');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const filteredListings = listings.filter(l =>
         searchText === '' ||
         l.title?.toLowerCase().includes(searchText.toLowerCase()) ||
@@ -184,62 +186,57 @@ export default function DiscoveryScreen() {
         l.profiles?.full_name?.toLowerCase().includes(searchText.toLowerCase())
     );
 
-    const getMatchColor = (pct: number) => {
-        if (pct >= 80) return COLORS.success;
-        if (pct >= 60) return COLORS.primaryLight;
-        if (pct >= 40) return COLORS.accent;
-        return COLORS.textMuted;
-    };
-
-    const renderItem = ({ item }: { item: Listing }) => {
+    const renderItem = ({ item, index }: { item: Listing; index: number }) => {
         const creatorName = item.profiles?.full_name || item.creator_name_demo || 'User';
         const matchPct = (profile && item.profiles) ? calculateMatchPercentage(profile as Profile, item.profiles) : (item.user_id ? 0 : 85);
-        const matchColor = getMatchColor(matchPct);
-        const avatarColor = getAvatarColor(creatorName);
+        const matchColor = getMatchColor(matchPct, COLORS);
 
         return (
-            <TouchableOpacity 
-                style={styles.card} 
-                activeOpacity={0.85} 
-                onPress={() => navigation.navigate('ListingDetail', { listing: item })}
-            >
-                <View style={styles.cardHeader}>
-                    <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                        {item.profiles?.avatar_url ? (
-                            <Image source={{ uri: item.profiles.avatar_url }} style={styles.avatarImage} />
-                        ) : (
-                            <Text style={styles.avatarText}>{creatorName.charAt(0)}</Text>
-                        )}
-                    </View>
-                    <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
-                </View>
-                <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
-                <Text style={styles.uniTag} numberOfLines={1}>{creatorName}</Text>
-                <Text style={styles.deptTag} numberOfLines={1}>{item.location}</Text>
-
-                <View style={styles.tagsRow}>
-                    <View style={[
-                        styles.statusTag,
-                        item.searching_for === 'Listing a Space' ? styles.statusTagSpace : styles.statusTagRoommate
-                    ]}>
-                        <Text style={[
-                            styles.statusTagText,
-                            item.searching_for === 'Listing a Space' ? styles.statusTagTextSpace : styles.statusTagTextRoommate
-                        ]}>
-                            {item.searching_for === 'Listing a Space' ? 'Has Room' : 'Needs Roomie'}
-                        </Text>
-                    </View>
-                    {(item.profiles?.is_verified || !item.user_id) && (
-                        <View style={styles.verifiedTag}>
-                            <Ionicons name="checkmark-circle" size={13} color={COLORS.success} style={{ marginRight: 3 }} />
-                            <Text style={styles.verifiedTagText}>Verified</Text>
+            <AnimatedCard index={index} style={styles.card}>
+                <TouchableOpacity
+                    activeOpacity={0.85}
+                    onPress={() => navigation.navigate('ListingDetail', { listing: item })}
+                    style={styles.cardInner}
+                >
+                    <View style={styles.cardHeader}>
+                        <Avatar
+                            name={creatorName}
+                            imageUrl={item.profiles?.avatar_url}
+                            size="md"
+                        />
+                        {/* Match Ring */}
+                        <View style={[styles.matchRing, { borderColor: matchColor }]}>
+                            <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
                         </View>
-                    )}
-                    <View style={styles.budgetTag}>
-                        <Text style={styles.budgetTagText}>₦{((item.price || 0) / 1000).toFixed(0)}k</Text>
                     </View>
-                </View>
-            </TouchableOpacity>
+                    <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
+                    <Text style={styles.uniTag} numberOfLines={1}>{creatorName}</Text>
+                    <Text style={styles.deptTag} numberOfLines={1}>{item.location}</Text>
+
+                    <View style={styles.tagsRow}>
+                        <View style={[
+                            styles.statusTag,
+                            item.searching_for === 'Listing a Space' ? styles.statusTagSpace : styles.statusTagRoommate
+                        ]}>
+                            <Text style={[
+                                styles.statusTagText,
+                                item.searching_for === 'Listing a Space' ? styles.statusTagTextSpace : styles.statusTagTextRoommate
+                            ]}>
+                                {item.searching_for === 'Listing a Space' ? 'Has Room' : 'Needs Roomie'}
+                            </Text>
+                        </View>
+                        {(item.profiles?.is_verified || !item.user_id) && (
+                            <View style={styles.verifiedTag}>
+                                <Ionicons name="checkmark-circle" size={13} color={COLORS.success} style={{ marginRight: 3 }} />
+                                <Text style={styles.verifiedTagText}>Verified</Text>
+                            </View>
+                        )}
+                        <View style={styles.budgetTag}>
+                            <Text style={styles.budgetTagText}>₦{((item.price || 0) / 1000).toFixed(0)}k</Text>
+                        </View>
+                    </View>
+                </TouchableOpacity>
+            </AnimatedCard>
         );
     };
 
@@ -286,15 +283,11 @@ export default function DiscoveryScreen() {
                         onPress={() => navigation.navigate('Profile')}
                         activeOpacity={0.7}
                     >
-                        <View style={[styles.profileAvatarInner, { backgroundColor: getAvatarColor(profile?.full_name || '') }]}>
-                            {profile?.avatar_url ? (
-                                <Image source={{ uri: profile.avatar_url }} style={styles.profileAvatarImage} />
-                            ) : (
-                                <Text style={styles.profileAvatarText}>
-                                    {profile?.full_name?.charAt(0)?.toUpperCase() || '?'}
-                                </Text>
-                            )}
-                        </View>
+                        <Avatar
+                            name={profile?.full_name || ''}
+                            imageUrl={profile?.avatar_url}
+                            size="md"
+                        />
                     </TouchableOpacity>
                 </View>
                 <Text style={styles.headerSubtitle}>
@@ -305,6 +298,7 @@ export default function DiscoveryScreen() {
             {/* Error Message */}
             {error && (
                 <View style={styles.errorBanner}>
+                    <Ionicons name="alert-circle-outline" size={16} color="#f87171" style={{ marginRight: 6 }} />
                     <Text style={styles.errorText}>{error}</Text>
                 </View>
             )}
@@ -320,6 +314,11 @@ export default function DiscoveryScreen() {
                         value={searchText}
                         onChangeText={setSearchText}
                     />
+                    {searchText.length > 0 && (
+                        <TouchableOpacity onPress={() => setSearchText('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                            <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+                        </TouchableOpacity>
+                    )}
                 </View>
             </View>
 
@@ -365,8 +364,20 @@ export default function DiscoveryScreen() {
                 }
                 ListEmptyComponent={
                     !loading && (
-                        <View style={styles.centered}>
-                            <Text style={styles.emptyText}>No listings found.</Text>
+                        <View style={styles.emptyContainer}>
+                            <View style={styles.emptyIconWrap}>
+                                <Ionicons name="home-outline" size={40} color={COLORS.primaryLight} />
+                            </View>
+                            <Text style={styles.emptyTitle}>No listings yet</Text>
+                            <Text style={styles.emptyText}>Be the first to post a room or find a roommate</Text>
+                            <TouchableOpacity
+                                style={styles.emptyCta}
+                                onPress={() => navigation.navigate('CreateListing')}
+                                activeOpacity={0.8}
+                            >
+                                <Ionicons name="add" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                                <Text style={styles.emptyCtaText}>Create Listing</Text>
+                            </TouchableOpacity>
                         </View>
                     )
                 }
@@ -417,7 +428,7 @@ export default function DiscoveryScreen() {
     );
 }
 
-const createStyles = (COLORS: any) => StyleSheet.create({
+const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: COLORS.bg,
@@ -430,7 +441,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     header: {
         paddingTop: 40,
-        paddingHorizontal: 12, // Pushed right to the edge
+        paddingHorizontal: 12,
         paddingBottom: SPACING.sm,
     },
     headerTop: {
@@ -445,7 +456,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     logoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 8, // Closer to text
+        gap: 8,
     },
     smallLogoWrapper: {
         width: 46,
@@ -463,7 +474,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     headerTitle: {
         ...FONTS.h1,
         color: COLORS.textPrimary,
-        lineHeight: 32, // Better alignment
+        lineHeight: 32,
     },
     headerSubtitle: {
         ...FONTS.caption,
@@ -471,34 +482,13 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         marginTop: 4,
     },
     profileShortcut: {
-        width: 44,
-        height: 44,
         borderRadius: 22,
-        backgroundColor: COLORS.bgCard, // Use card bg
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: COLORS.border,
+        overflow: 'hidden',
         ...SHADOWS.card,
     },
-    profileAvatarInner: {
-        width: '100%',
-        height: '100%',
-        borderRadius: 22,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden',
-    },
-    profileAvatarImage: {
-        width: '100%',
-        height: '100%',
-    },
-    profileAvatarText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '700',
-    },
     errorBanner: {
+        flexDirection: 'row',
+        alignItems: 'center',
         backgroundColor: 'rgba(239, 68, 68, 0.1)',
         marginHorizontal: SPACING.lg,
         padding: SPACING.sm,
@@ -510,7 +500,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     errorText: {
         color: '#f87171',
         ...FONTS.small,
-        textAlign: 'center',
+        flex: 1,
     },
     searchContainer: {
         paddingHorizontal: 12,
@@ -545,7 +535,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         top: 0,
         left: 0,
         right: 0,
-        paddingTop: Platform.OS === 'ios' ? 48 : 36, // Match lifted header
+        paddingTop: Platform.OS === 'ios' ? 48 : 36,
         paddingHorizontal: 12,
         paddingBottom: SPACING.md,
         backgroundColor: COLORS.bg,
@@ -598,10 +588,12 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     card: {
         width: '48%',
+        marginBottom: SPACING.md,
+    },
+    cardInner: {
         backgroundColor: COLORS.bgCard,
         borderRadius: RADIUS.xl,
         padding: SPACING.md,
-        marginBottom: SPACING.md,
         borderWidth: 1,
         borderColor: COLORS.border,
     },
@@ -611,26 +603,19 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         alignItems: 'center',
         marginBottom: SPACING.md,
     },
-    avatar: {
-        width: 44,
-        height: 44,
-        borderRadius: RADIUS.md,
+    matchRing: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        borderWidth: 2.5,
         alignItems: 'center',
         justifyContent: 'center',
-    },
-    avatarText: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#FFFFFF',
-    },
-    avatarImage: {
-        width: 44,
-        height: 44,
-        borderRadius: RADIUS.md,
+        backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.8)',
     },
     matchText: {
-        ...FONTS.small,
-        fontWeight: '700',
+        fontSize: 11,
+        fontWeight: '800',
+        letterSpacing: -0.3,
     },
     name: {
         ...FONTS.bodyBold,
@@ -698,27 +683,48 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.small,
         color: COLORS.textSecondary,
     },
-    chatButton: {
-        backgroundColor: COLORS.bgInput,
-        borderRadius: RADIUS.md,
-        paddingVertical: 10,
-        alignItems: 'center',
-        marginTop: 'auto',
-        borderWidth: 1,
-        borderColor: COLORS.border,
-    },
-    chatButtonText: {
-        ...FONTS.small,
-        color: COLORS.primaryLight,
-        fontWeight: '700',
-    },
     footerLoading: {
         paddingVertical: SPACING.md,
         alignItems: 'center',
     },
+    // Enhanced empty state
+    emptyContainer: {
+        alignItems: 'center',
+        paddingTop: 60,
+        paddingHorizontal: SPACING.xl,
+    },
+    emptyIconWrap: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: `${COLORS.primary}15`,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: SPACING.lg,
+    },
+    emptyTitle: {
+        ...FONTS.h2,
+        color: COLORS.textPrimary,
+        marginBottom: SPACING.xs,
+    },
     emptyText: {
-        ...FONTS.body,
+        ...FONTS.caption,
         color: COLORS.textMuted,
+        textAlign: 'center',
+        marginBottom: SPACING.lg,
+    },
+    emptyCta: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.primary,
+        paddingHorizontal: SPACING.lg,
+        paddingVertical: SPACING.sm + 2,
+        borderRadius: RADIUS.md,
+    },
+    emptyCtaText: {
+        color: '#FFFFFF',
+        ...FONTS.bodyBold,
+        fontSize: 14,
     },
     fab: {
         position: 'absolute',

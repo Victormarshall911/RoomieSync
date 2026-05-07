@@ -1,19 +1,13 @@
 import React, { useState, useCallback, useEffect } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, Image, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, RefreshControl, TextInput, Platform } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
+import Avatar from '../components/Avatar';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
-
-const AVATAR_COLORS = ['#6C3AED', '#2563EB', '#0891B2', '#059669', '#D97706', '#DC2626', '#7C3AED', '#4F46E5'];
-const getAvatarColor = (name: string) => {
-    let hash = 0;
-    for (let i = 0; i < (name || '').length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    return AVATAR_COLORS[Math.abs(hash) % AVATAR_COLORS.length];
-};
 
 const formatRelativeTime = (dateString: string) => {
     if (!dateString) return '';
@@ -37,6 +31,7 @@ export default function ConversationsScreen() {
     const [lastReadMap, setLastReadMap] = useState<Record<string, string>>({});
     const [loading, setLoading] = useState(true);
     const [refreshing, setRefreshing] = useState(false);
+    const [searchText, setSearchText] = useState('');
 
     const fetchConversations = async (showLoading = true) => {
         if (showLoading) setLoading(true);
@@ -117,11 +112,17 @@ export default function ConversationsScreen() {
         fetchConversations(false);
     };
 
+    // Filter conversations by search text
+    const filteredConversations = conversations.filter(item => {
+        if (!searchText) return true;
+        const otherUser = item.user1_id === user?.id ? item.user2 : item.profiles;
+        const name = otherUser?.full_name?.toLowerCase() || '';
+        return name.includes(searchText.toLowerCase());
+    });
+
     const renderItem = ({ item }: { item: any }) => {
         const otherUserId = item.user1_id === user?.id ? item.user2_id : item.user1_id;
         const otherUser = item.user1_id === user?.id ? item.user2 : item.profiles;
-        const initial = otherUser?.full_name?.charAt(0) || '?';
-        const avatarColor = getAvatarColor(otherUser?.full_name || '');
         
         const lastMsg = item.lastMsg;
         const lastReadAt = lastReadMap[item.id];
@@ -135,25 +136,29 @@ export default function ConversationsScreen() {
 
         return (
             <TouchableOpacity
-                style={styles.convItem}
+                style={[styles.convItem, isUnread && styles.convItemUnread]}
                 onPress={() => (navigation as any).navigate('Chat', {
                     conversationId: item.id,
                     otherUser: { ...otherUser, id: otherUserId }
                 })}
                 activeOpacity={0.7}
             >
-                <View style={[styles.avatar, { backgroundColor: avatarColor }]}>
-                    {otherUser?.avatar_url ? (
-                        <Image source={{ uri: otherUser.avatar_url }} style={styles.avatarImage} />
-                    ) : (
-                        <Text style={styles.avatarText}>{initial}</Text>
-                    )}
+                <View style={styles.avatarWrap}>
+                    <Avatar
+                        name={otherUser?.full_name || ''}
+                        imageUrl={otherUser?.avatar_url}
+                        size="lg"
+                    />
+                    {/* Online indicator dot */}
+                    <View style={styles.onlineDot} />
                 </View>
                 <View style={styles.convContent}>
                     <View style={styles.convHeader}>
                         <Text style={styles.convName} numberOfLines={1}>{otherUser?.full_name || 'Unknown'}</Text>
                         {lastMsg && (
-                            <Text style={styles.convTime}>{formatRelativeTime(lastMsg.created_at)}</Text>
+                            <Text style={[styles.convTime, isUnread && styles.convTimeUnread]}>
+                                {formatRelativeTime(lastMsg.created_at)}
+                            </Text>
                         )}
                     </View>
                     <View style={styles.convFooter}>
@@ -164,7 +169,9 @@ export default function ConversationsScreen() {
                             ]} 
                             numberOfLines={1}
                         >
-                            {lastMsg ? lastMsg.content : 'No messages yet'}
+                            {lastMsg ? (
+                                lastMsg.sender_id === user?.id ? `You: ${lastMsg.content}` : lastMsg.content
+                            ) : 'No messages yet'}
                         </Text>
                         {isUnread && <View style={styles.unreadDot} />}
                     </View>
@@ -185,11 +192,34 @@ export default function ConversationsScreen() {
         <View style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Messages</Text>
-                <Text style={styles.headerSubtitle}>{conversations.length} conversations</Text>
+                <Text style={styles.headerSubtitle}>
+                    {filteredConversations.length} conversation{filteredConversations.length !== 1 ? 's' : ''}
+                </Text>
             </View>
 
+            {/* Search Bar */}
+            {conversations.length > 0 && (
+                <View style={styles.searchContainer}>
+                    <View style={styles.searchBar}>
+                        <Ionicons name="search" size={18} color={COLORS.textMuted} style={{ marginRight: SPACING.sm }} />
+                        <TextInput
+                            style={styles.searchInput}
+                            placeholder="Search conversations..."
+                            placeholderTextColor={COLORS.textMuted}
+                            value={searchText}
+                            onChangeText={setSearchText}
+                        />
+                        {searchText.length > 0 && (
+                            <TouchableOpacity onPress={() => setSearchText('')}>
+                                <Ionicons name="close-circle" size={18} color={COLORS.textMuted} />
+                            </TouchableOpacity>
+                        )}
+                    </View>
+                </View>
+            )}
+
             <FlatList
-                data={conversations}
+                data={filteredConversations}
                 renderItem={renderItem}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
@@ -199,9 +229,15 @@ export default function ConversationsScreen() {
                 }
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
-                        <Ionicons name="chatbubbles-outline" size={48} color={COLORS.textMuted} style={{ marginBottom: SPACING.md }} />
-                        <Text style={styles.emptyTitle}>No messages yet</Text>
-                        <Text style={styles.emptyText}>Start chatting from the Discover tab</Text>
+                        <View style={styles.emptyIconWrap}>
+                            <Ionicons name="chatbubbles-outline" size={40} color={COLORS.primaryLight} />
+                        </View>
+                        <Text style={styles.emptyTitle}>
+                            {searchText ? 'No results' : 'No messages yet'}
+                        </Text>
+                        <Text style={styles.emptyText}>
+                            {searchText ? 'Try a different search' : 'Start chatting from the Discover tab'}
+                        </Text>
                     </View>
                 }
             />
@@ -219,8 +255,8 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         alignItems: 'center',
     },
     header: {
-        paddingTop: 40, // Lifted up to match Discovery
-        paddingHorizontal: 12, // Match the corner padding
+        paddingTop: 40,
+        paddingHorizontal: 12,
         paddingBottom: SPACING.md,
     },
     headerTitle: {
@@ -232,8 +268,28 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.textSecondary,
         marginTop: 2,
     },
+    searchContainer: {
+        paddingHorizontal: 12,
+        marginBottom: SPACING.md,
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.bgInput,
+        borderRadius: RADIUS.md,
+        paddingHorizontal: SPACING.md,
+        height: 42,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+    },
+    searchInput: {
+        flex: 1,
+        color: COLORS.textPrimary,
+        ...FONTS.body,
+        fontSize: 15,
+    },
     list: {
-        paddingHorizontal: 12, // Match corners
+        paddingHorizontal: 12,
         paddingBottom: 80,
     },
     convItem: {
@@ -246,22 +302,23 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         borderWidth: 1,
         borderColor: COLORS.border,
     },
-    avatar: {
-        width: 52,
-        height: 52,
-        borderRadius: 26,
-        alignItems: 'center',
-        justifyContent: 'center',
-        overflow: 'hidden', // Added for image
+    convItemUnread: {
+        borderColor: `${COLORS.primary}40`,
+        backgroundColor: `${COLORS.primary}08`,
     },
-    avatarImage: {
-        width: '100%',
-        height: '100%',
+    avatarWrap: {
+        position: 'relative',
     },
-    avatarText: {
-        color: '#FFFFFF',
-        fontSize: 20,
-        fontWeight: '600',
+    onlineDot: {
+        position: 'absolute',
+        bottom: 1,
+        right: 1,
+        width: 12,
+        height: 12,
+        borderRadius: 6,
+        backgroundColor: COLORS.success,
+        borderWidth: 2,
+        borderColor: COLORS.bgCard,
     },
     convContent: {
         flex: 1,
@@ -283,6 +340,10 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.small,
         color: COLORS.textMuted,
     },
+    convTimeUnread: {
+        color: COLORS.primaryLight,
+        fontWeight: '600',
+    },
     convFooter: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -298,15 +359,24 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         fontWeight: '600',
     },
     unreadDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
+        width: 10,
+        height: 10,
+        borderRadius: 5,
         backgroundColor: COLORS.primary,
         marginLeft: SPACING.sm,
     },
     emptyContainer: {
         alignItems: 'center',
-        paddingTop: 120,
+        paddingTop: 100,
+    },
+    emptyIconWrap: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        backgroundColor: `${COLORS.primary}15`,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: SPACING.lg,
     },
     emptyTitle: {
         ...FONTS.h2,

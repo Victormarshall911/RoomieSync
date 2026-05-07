@@ -1,6 +1,6 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import { COLORS, FONTS, RADIUS, SPACING } from '../utils/theme';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Appearance } from 'react-native';
+import { DARK_COLORS, LIGHT_COLORS, FONTS, RADIUS, SPACING, ThemeColors } from '../utils/theme';
 
 interface Props {
     children: ReactNode;
@@ -11,6 +11,10 @@ interface State {
     error: Error | null;
 }
 
+/**
+ * ErrorBoundary that respects the current system color scheme.
+ * Because class components can't use hooks, we read Appearance directly.
+ */
 export class ErrorBoundary extends Component<Props, State> {
     public state: State = {
         hasError: false,
@@ -29,14 +33,20 @@ export class ErrorBoundary extends Component<Props, State> {
         this.setState({ hasError: false, error: null });
     };
 
+    private getColors(): ThemeColors {
+        const scheme = Appearance.getColorScheme();
+        return scheme === 'light' ? LIGHT_COLORS : DARK_COLORS;
+    }
+
     public render() {
         if (this.state.hasError) {
+            const COLORS = this.getColors();
             return (
-                <View style={styles.container}>
-                    <View style={styles.card}>
+                <View style={[styles.container, { backgroundColor: COLORS.bg }]}>
+                    <View style={[styles.card, { backgroundColor: COLORS.bgCard, borderColor: COLORS.border }]}>
                         <Text style={styles.icon}>⚠️</Text>
-                        <Text style={styles.title}>Something went wrong</Text>
-                        <Text style={styles.message}>
+                        <Text style={[styles.title, { color: COLORS.textPrimary }]}>Something went wrong</Text>
+                        <Text style={[styles.message, { color: COLORS.textSecondary }]}>
                             An unexpected error occurred. Our team has been notified.
                         </Text>
                         {__DEV__ && this.state.error && (
@@ -44,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
                                 <Text style={styles.devError}>{this.state.error.toString()}</Text>
                             </View>
                         )}
-                        <TouchableOpacity style={styles.button} onPress={this.handleReset}>
+                        <TouchableOpacity style={[styles.button, { backgroundColor: COLORS.primary }]} onPress={this.handleReset}>
                             <Text style={styles.buttonText}>Try Again</Text>
                         </TouchableOpacity>
                     </View>
@@ -59,18 +69,15 @@ export class ErrorBoundary extends Component<Props, State> {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: COLORS.bg,
         justifyContent: 'center',
         alignItems: 'center',
         padding: SPACING.lg,
     },
     card: {
-        backgroundColor: COLORS.bgCard,
         borderRadius: RADIUS.xl,
         padding: SPACING.xl,
         alignItems: 'center',
         borderWidth: 1,
-        borderColor: COLORS.border,
         width: '100%',
     },
     icon: {
@@ -79,13 +86,11 @@ const styles = StyleSheet.create({
     },
     title: {
         ...FONTS.h2,
-        color: COLORS.white,
         marginBottom: SPACING.sm,
         textAlign: 'center',
     },
     message: {
         ...FONTS.body,
-        color: COLORS.textSecondary,
         textAlign: 'center',
         marginBottom: SPACING.lg,
     },
@@ -102,13 +107,12 @@ const styles = StyleSheet.create({
         fontFamily: Platform.OS === 'ios' ? 'Courier' : 'monospace',
     },
     button: {
-        backgroundColor: COLORS.primary,
         paddingVertical: SPACING.md,
         paddingHorizontal: SPACING.xl,
         borderRadius: RADIUS.lg,
     },
     buttonText: {
         ...FONTS.bodyBold,
-        color: COLORS.white,
+        color: '#FFFFFF',
     },
 });
