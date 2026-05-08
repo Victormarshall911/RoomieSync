@@ -30,13 +30,21 @@ export default function UserProfileScreen() {
     const matchColor = getMatchColor(matchPct, COLORS);
 
     const handleChat = async () => {
-        if (!user) return;
+        if (!user || !viewedProfile?.id) return;
         try {
-            const { data: existingConvo } = await supabase
+            // Fetch conversations and filter locally to 100% avoid PGRST116 (multiple rows) errors
+            const { data: convos, error } = await supabase
                 .from('conversations')
-                .select('*')
-                .or(`and(user1_id.eq.${user.id},user2_id.eq.${viewedProfile.id}),and(user1_id.eq.${viewedProfile.id},user2_id.eq.${user.id})`)
-                .maybeSingle();
+                .select('id, user1_id, user2_id')
+                .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+            if (error) throw error;
+
+            // Find the specific conversation with the viewed profile
+            const existingConvo = convos?.find(c => 
+                (c.user1_id === user.id && c.user2_id === viewedProfile.id) ||
+                (c.user1_id === viewedProfile.id && c.user2_id === user.id)
+            );
 
             if (existingConvo) {
                 navigation.navigate('Chat', { conversationId: existingConvo.id, otherUser: viewedProfile });
@@ -45,6 +53,8 @@ export default function UserProfileScreen() {
             }
         } catch (err) {
             console.error('Chat navigation error:', err);
+            // Fallback: try navigating without a conversationId to let ChatScreen handle it
+            navigation.navigate('Chat', { conversationId: null, otherUser: viewedProfile });
         }
     };
 
@@ -119,8 +129,8 @@ export default function UserProfileScreen() {
                 </View>
             </ScrollView>
 
-            {/* Bottom CTA */}
-            {viewedProfile.id !== user?.id && (
+            {/* Bottom CTA - Hide if viewing own profile or if we came from the chat screen already */}
+            {viewedProfile.id !== user?.id && !route.params?.fromChat && (
                 <View style={styles.bottomBar}>
                     <TouchableOpacity style={styles.messageButton} onPress={handleChat} activeOpacity={0.85}>
                         <Ionicons name="chatbubble-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />

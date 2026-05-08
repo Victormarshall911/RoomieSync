@@ -26,13 +26,21 @@ export default function ListingDetailScreen() {
     const matchLabel = getMatchLabel(matchPct);
 
     const handleChat = async () => {
-        if (!user || !lister) return;
+        if (!user || !lister?.id) return;
         try {
-            const { data: existingConvo } = await supabase
+            // Fetch conversations and filter locally to 100% avoid PGRST116 (multiple rows) errors
+            const { data: convos, error } = await supabase
                 .from('conversations')
-                .select('*')
-                .or(`and(user1_id.eq.${user.id},user2_id.eq.${lister.id}),and(user1_id.eq.${lister.id},user2_id.eq.${user.id})`)
-                .maybeSingle();
+                .select('id, user1_id, user2_id')
+                .or(`user1_id.eq.${user.id},user2_id.eq.${user.id}`);
+
+            if (error) throw error;
+
+            // Find the specific conversation with the lister
+            const existingConvo = convos?.find(c => 
+                (c.user1_id === user.id && c.user2_id === lister.id) ||
+                (c.user1_id === lister.id && c.user2_id === user.id)
+            );
 
             if (existingConvo) {
                 navigation.navigate('Chat', { conversationId: existingConvo.id, otherUser: lister });
@@ -41,6 +49,8 @@ export default function ListingDetailScreen() {
             }
         } catch (err) {
             console.error('Chat navigation error:', err);
+            // Fallback: try navigating without a conversationId to let ChatScreen handle it
+            navigation.navigate('Chat', { conversationId: null, otherUser: lister });
         }
     };
 

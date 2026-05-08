@@ -78,6 +78,16 @@ export default function ChatScreen() {
     // Track whether user is near the bottom to auto-scroll
     const isNearBottom = useRef(true);
 
+    // Sync state with route params when they change (critical when screen is reused in the stack)
+    useEffect(() => {
+        if (conversationId !== activeConversationId) {
+            setActiveConversationId(conversationId);
+        }
+        if (otherUser && otherUser.id !== otherProfile?.id) {
+            setOtherProfile(otherUser);
+        }
+    }, [conversationId, otherUser?.id]);
+
     // Fetch the other user's full profile to get fresh is_verified status
     useEffect(() => {
         const fetchOtherProfile = async () => {
@@ -110,9 +120,10 @@ export default function ChatScreen() {
         fetchMessages();
         markAsRead();
 
-        // Create a unique channel for this conversation
+        // Create a unique channel for this conversation attempt
+        const channelId = `room:${activeConversationId}:${Date.now()}`;
         const channel = supabase
-            .channel(`room:${activeConversationId}`)
+            .channel(channelId)
             .on(
                 'postgres_changes',
                 { 
@@ -310,7 +321,7 @@ export default function ChatScreen() {
 
                 <TouchableOpacity
                     style={styles.headerProfileLink}
-                    onPress={() => navigation.navigate('UserProfile', { profile: otherProfile })}
+                    onPress={() => navigation.navigate('UserProfile', { profile: otherProfile, fromChat: true })}
                     activeOpacity={0.7}
                 >
                     <Avatar
