@@ -2,6 +2,7 @@ import * as Notifications from 'expo-notifications';
 import * as Device from 'expo-device';
 import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import React from 'react';
 import { supabase } from '../lib/supabase';
 
 Notifications.setNotificationHandler({
@@ -47,7 +48,6 @@ export async function registerForPushNotificationsAsync() {
             return;
         }
 
-        // Learn more about projectId: https://docs.expo.dev/push-notifications/push-notifications-setup/#configure-projectid
         // @ts-ignore
         const projectId = Constants.expoConfig?.extra?.eas?.projectId ?? Constants.easConfig?.projectId;
 
@@ -78,4 +78,22 @@ export async function savePushToken(userId: string, token: string) {
     if (error) {
         console.error('Error saving push token:', error);
     }
+}
+
+export function useNotificationNavigation(navigation: any) {
+    React.useEffect(() => {
+        const subscription = Notifications.addNotificationResponseReceivedListener(response => {
+            const data = response.notification.request.content.data;
+            
+            if (data?.type === 'chat' && data?.conversationId) {
+                // Navigate to Chat screen with the conversationId
+                navigation.navigate('Chat', { 
+                    conversationId: data.conversationId,
+                    otherUser: data.otherUser || { id: data.senderId, full_name: 'User' }
+                });
+            }
+        });
+
+        return () => subscription.remove();
+    }, [navigation]);
 }

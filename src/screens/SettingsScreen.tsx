@@ -181,7 +181,16 @@ export default function SettingsScreen() {
                     <MenuItem
                         icon="log-out-outline"
                         label="Sign Out"
-                        onPress={signOut}
+                        onPress={() => {
+                            Alert.alert(
+                                'Sign Out',
+                                'Are you sure you want to sign out?',
+                                [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    { text: 'Sign Out', style: 'destructive', onPress: signOut }
+                                ]
+                            );
+                        }}
                     />
                     <MenuItem
                         icon="trash-outline"

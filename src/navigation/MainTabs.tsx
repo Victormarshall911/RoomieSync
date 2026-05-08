@@ -11,6 +11,9 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useMessages } from '../context/MessageContext';
 
+import { useNotificationNavigation } from '../hooks/useNotifications';
+import { useNavigation } from '@react-navigation/native';
+
 const Tab = createBottomTabNavigator();
 
 function AnimatedTabIcon({ name, size, color, focused }: { name: any; size: number; color: string; focused: boolean }) {
@@ -36,6 +39,10 @@ export default function MainTabs() {
     const { profile } = useAuth();
     const { colors: COLORS, isDark } = useTheme();
     const { unreadCount } = useMessages();
+    const navigation = useNavigation();
+
+    // Handle deep linking from notifications
+    useNotificationNavigation(navigation);
 
     return (
         <Tab.Navigator
