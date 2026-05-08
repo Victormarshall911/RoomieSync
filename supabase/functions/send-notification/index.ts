@@ -1,15 +1,20 @@
+// @ts-ignore
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+// @ts-ignore
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
 const EXPO_PUSH_URL = "https://exp.host/--/api/v2/push/send"
 
-serve(async (req) => {
+// @ts-ignore
+serve(async (req: any) => {
   try {
     const payload = await req.json()
     const { record } = payload
     
     // 1. Initialize Supabase client
+    // @ts-ignore
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? ''
+    // @ts-ignore
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     const supabase = createClient(supabaseUrl, supabaseKey)
 
@@ -72,7 +77,8 @@ serve(async (req) => {
     })
 
   } catch (error) {
-    return new Response(JSON.stringify({ error: error.message }), { 
+    const err = error as Error;
+    return new Response(JSON.stringify({ error: err.message }), { 
       headers: { "Content-Type": "application/json" },
       status: 500 
     })
