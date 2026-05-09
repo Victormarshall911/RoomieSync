@@ -32,7 +32,7 @@ export default function UserProfileScreen() {
     const handleChat = async () => {
         if (!user || !viewedProfile?.id) return;
         try {
-            // Fetch conversations and filter locally to 100% avoid PGRST116 (multiple rows) errors
+            // Fetch conversations and filter locally to 100% avoid PGRST116 errors
             const { data: convos, error } = await supabase
                 .from('conversations')
                 .select('id, user1_id, user2_id')
