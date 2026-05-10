@@ -7,6 +7,7 @@ import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import { Ionicons } from '@expo/vector-icons';
 import GradientButton from '../components/GradientButton';
+// Begining of function
 
 export default function CreateListingScreen() {
     const { user } = useAuth();
