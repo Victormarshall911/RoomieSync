@@ -34,7 +34,7 @@ export default function VerificationScreen() {
             const response = await fetch(image);
             const blob = await response.blob();
 
-            // Convert blob to ArrayBuffer for reliable upload
+            // Convert blob to ArrayBuffer for reliable uploading
             const reader = new FileReader();
             const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
                 reader.onload = () => resolve(reader.result as ArrayBuffer);
@@ -83,7 +83,7 @@ export default function VerificationScreen() {
 
     return (
         <View style={styles.container}>
-            {/* Header */}
+            {/* Headers */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Verify</Text>
                 <Text style={styles.headerSubtitle}>Prove you're a real student</Text>
