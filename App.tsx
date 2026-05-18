@@ -9,7 +9,7 @@ import { ErrorBoundary } from './src/components/ErrorBoundary';
 import 'react-native-gesture-handler';
 import { LogBox } from 'react-native';
 
-// Suppress known Expo Go notification warnings
+// Suppress known Expo Go notification warnings on launch
 LogBox.ignoreLogs([
     'expo-notifications',
 ]);
