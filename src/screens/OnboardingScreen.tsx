@@ -45,10 +45,10 @@ export default function OnboardingScreen({ navigation }: Props) {
     const completeOnboarding = async () => {
         try {
             await AsyncStorage.setItem('@has_seen_onboarding', 'true');
-            navigation.replace('Auth');
+            navigation.replace('ProfileSetup');
         } catch (error) {
             console.error('Error saving onboarding status:', error);
-            navigation.replace('Auth');
+            navigation.replace('ProfileSetup');
         }
     };
 

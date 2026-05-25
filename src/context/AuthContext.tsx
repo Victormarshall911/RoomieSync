@@ -3,6 +3,7 @@ import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 import { Profile } from '../utils/matching';
 import { registerForPushNotificationsAsync, savePushToken } from '../hooks/useNotifications';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface AuthContextType {
     session: Session | null;
@@ -44,6 +45,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const fetchProfile = async (userId: string) => {
         try {
+            // Check for pending profile data from unauthenticated onboarding
+            const pendingProfileStr = await AsyncStorage.getItem('@pending_profile');
+            if (pendingProfileStr) {
+                const pendingProfile = JSON.parse(pendingProfileStr);
+                await supabase.from('profiles').upsert({ id: userId, ...pendingProfile });
+                await AsyncStorage.removeItem('@pending_profile');
+            }
+
             const { data, error } = await supabase
                 .from('profiles')
                 .select('*')

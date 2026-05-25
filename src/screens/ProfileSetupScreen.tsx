@@ -68,6 +68,15 @@ export default function ProfileSetupScreen() {
                     title="Continue"
                     onPress={handleNext}
                 />
+
+                <TouchableOpacity 
+                    style={{ marginTop: SPACING.lg, alignItems: 'center', marginBottom: SPACING.xl }}
+                    onPress={() => navigation.navigate('Auth' as any)}
+                >
+                    <Text style={{ ...FONTS.body, color: COLORS.textSecondary }}>
+                        Already have an account? <Text style={{ color: COLORS.primaryLight, fontWeight: 'bold' }}>Log in</Text>
+                    </Text>
+                </TouchableOpacity>
             </ScrollView>
         </View>
     );

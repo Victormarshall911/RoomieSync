@@ -11,6 +11,10 @@ export interface Profile {
     cleanliness: number;
     socializing: 'Guests often' | 'Rarely';
     smoking: 'Yes' | 'No';
+    noise_level?: 'Quiet' | 'Moderate' | 'Lively';
+    study_time?: 'Morning' | 'Night' | 'Varies';
+    drinking_habit?: 'Often' | 'Socially' | 'Rarely/Never';
+    pets_preference?: 'Love them' | 'Okay with them' | 'Prefer no pets';
     avatar_url?: string;
     is_verified: boolean;
     searching_for?: 'Looking for Roommate' | 'Listing a Space' | 'Already Matched';
@@ -27,30 +31,30 @@ export interface Profile {
 export function calculateMatchPercentage(p1: Profile, p2: Profile): number {
     let score = 0;
     const weights = {
-        budget: 0.30,
-        location: 0.20,
-        sleep: 0.15,
-        cleanliness: 0.15,
-        social: 0.10,
-        smoking: 0.10
+        budget: 0.25,
+        location: 0.15,
+        cleanliness: 0.12,
+        sleep: 0.10,
+        noise: 0.10,
+        social: 0.08,
+        study: 0.08,
+        smoking: 0.06,
+        drinking: 0.06
     };
 
-    // 1. Budget Overlap (30%)
-    // Calculate if ranges overlap. If they do, how much?
+    // 1. Budget Overlap (25%)
     const maxMin = Math.max(p1.budget_min, p2.budget_min);
     const minMax = Math.min(p1.budget_max, p2.budget_max);
     
     if (maxMin <= minMax) {
-        // Overlap exists
         const overlapRange = minMax - maxMin;
         const p1Range = p1.budget_max - p1.budget_min || 1;
         const p2Range = p2.budget_max - p2.budget_min || 1;
-        // Simple overlap ratio
         const overlapRatio = (overlapRange * 2) / (p1Range + p2Range);
         score += Math.min(overlapRatio, 1) * weights.budget;
     }
 
-    // 2. Location Preference (20%)
+    // 2. Location Preference (15%)
     if (p1.location_preference && p2.location_preference) {
         const loc1 = p1.location_preference.toLowerCase();
         const loc2 = p2.location_preference.toLowerCase();
@@ -61,27 +65,41 @@ export function calculateMatchPercentage(p1: Profile, p2: Profile): number {
         }
     }
 
-    // 3. Sleep Habit (15%)
+    // 3. Sleep Habit (10%)
     if (p1.sleep_habit === p2.sleep_habit) {
         score += weights.sleep;
     }
 
-    // 4. Cleanliness (15%) - within 2 levels
+    // 4. Cleanliness (12%)
     const cleanDiff = Math.abs(p1.cleanliness - p2.cleanliness);
     if (cleanDiff <= 2) {
-        // 1.0 score if identical, 0.7 if 1 level apart, 0.4 if 2 levels apart
         const cleanScore = 1 - (cleanDiff * 0.3);
         score += cleanScore * weights.cleanliness;
     }
 
-    // 5. Socializing (10%)
+    // 5. Noise Level (10%)
+    if (p1.noise_level && p2.noise_level && p1.noise_level === p2.noise_level) {
+        score += weights.noise;
+    }
+
+    // 6. Socializing (8%)
     if (p1.socializing === p2.socializing) {
         score += weights.social;
     }
 
-    // 6. Smoking (10%)
+    // 7. Study Time (8%)
+    if (p1.study_time && p2.study_time && p1.study_time === p2.study_time) {
+        score += weights.study;
+    }
+
+    // 8. Smoking (6%)
     if (p1.smoking === p2.smoking) {
         score += weights.smoking;
+    }
+
+    // 9. Drinking Habit (6%)
+    if (p1.drinking_habit && p2.drinking_habit && p1.drinking_habit === p2.drinking_habit) {
+        score += weights.drinking;
     }
 
     return Math.round(score * 100);

@@ -37,7 +37,7 @@ export type PreferencesData = ProfileSetupData & {
 
 export type RootStackParamList = {
     Onboarding: undefined;
-    Auth: undefined;
+    Auth: { isSignUp?: boolean } | undefined;
     ProfileSetup: undefined;
     Preferences: { profileData: ProfileSetupData };
     LifestyleSurvey: { profileData: PreferencesData };
@@ -106,6 +106,9 @@ export default function AppNavigator() {
                         {!hasSeenOnboarding && (
                             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
                         )}
+                        <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                        <Stack.Screen name="Preferences" component={PreferencesScreen} />
+                        <Stack.Screen name="LifestyleSurvey" component={LifestyleSurveyScreen} />
                         <Stack.Screen name="Auth" component={AuthScreen} />
                     </>
                 ) : !profile ? (

@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
-import { useRoute, RouteProp } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
@@ -38,9 +40,42 @@ const LIFESTYLE_OPTIONS = {
             { value: 'Yes', label: 'Yes', desc: 'Smoke regularly' },
         ],
     },
+    noise_level: {
+        label: 'Noise Level',
+        options: [
+            { value: 'Quiet', label: 'Quiet', desc: 'Need silence to focus/relax' },
+            { value: 'Moderate', label: 'Moderate', desc: 'Normal talking, light music' },
+            { value: 'Lively', label: 'Lively', desc: 'Loud music, TV, very vocal' },
+        ],
+    },
+    study_time: {
+        label: 'Study / Focus Time',
+        options: [
+            { value: 'Morning', label: 'Morning', desc: 'Focus early in the day' },
+            { value: 'Night', label: 'Night', desc: 'Focus late at night' },
+            { value: 'Varies', label: 'Varies', desc: 'No set schedule' },
+        ],
+    },
+    drinking_habit: {
+        label: 'Drinking Habit',
+        options: [
+            { value: 'Often', label: 'Often', desc: 'Drink regularly' },
+            { value: 'Socially', label: 'Socially', desc: 'Occasional drinks with friends' },
+            { value: 'Rarely/Never', label: 'Rarely/Never', desc: 'Do not drink' },
+        ],
+    },
+    pets_preference: {
+        label: 'Pets Preference',
+        options: [
+            { value: 'Love them', label: 'Love them', desc: 'Want or have pets' },
+            { value: 'Okay with them', label: 'Okay with them', desc: "Don't mind them" },
+            { value: 'Prefer no pets', label: 'Prefer no pets', desc: 'Allergic or dislike' },
+        ],
+    },
 };
 
 export default function LifestyleSurveyScreen() {
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const route = useRoute<RouteProp<RootStackParamList, 'LifestyleSurvey'>>();
     const { user, fetchProfile } = useAuth();
     const { colors: COLORS, isDark } = useTheme();
@@ -61,21 +96,40 @@ export default function LifestyleSurveyScreen() {
             Alert.alert('Error', 'Please select all lifestyle preferences');
             return;
         }
+
+        const fullProfileToSave = {
+            full_name: profileData.fullName,
+            university: profileData.university,
+            department: profileData.department,
+            gender: profileData.gender,
+            budget_min: profileData.budgetMin,
+            budget_max: profileData.budgetMax,
+            location_preference: profileData.locationPreference,
+            sleep_habit: selections.sleep_habit,
+            cleanliness: selections.cleanliness,
+            socializing: selections.socializing,
+            smoking: selections.smoking,
+            noise_level: selections.noise_level,
+            study_time: selections.study_time,
+            drinking_habit: selections.drinking_habit,
+            pets_preference: selections.pets_preference,
+        };
+
+        if (!user) {
+            try {
+                await AsyncStorage.setItem('@pending_profile', JSON.stringify(fullProfileToSave));
+                navigation.navigate('Auth', { isSignUp: true } as any);
+            } catch (e) {
+                Alert.alert('Error', 'Could not save profile data');
+            }
+            return;
+        }
+
         setLoading(true);
         try {
             const { error } = await supabase.from('profiles').upsert({
-                id: user?.id,
-                full_name: profileData.fullName,
-                university: profileData.university,
-                department: profileData.department,
-                gender: profileData.gender,
-                budget_min: profileData.budgetMin,
-                budget_max: profileData.budgetMax,
-                location_preference: profileData.locationPreference,
-                sleep_habit: selections.sleep_habit,
-                cleanliness: selections.cleanliness,
-                socializing: selections.socializing,
-                smoking: selections.smoking,
+                id: user.id,
+                ...fullProfileToSave,
             });
             if (error) throw error;
             fetchProfile();
