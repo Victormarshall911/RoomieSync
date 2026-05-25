@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -34,8 +34,8 @@ export default function PreferencesScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
                 {/* Progress */}
                 <View style={styles.progressRow}>
                     <View style={[styles.progressDot, styles.progressDone]} />
@@ -98,7 +98,7 @@ export default function PreferencesScreen() {
                     onPress={handleNext}
                 />
             </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

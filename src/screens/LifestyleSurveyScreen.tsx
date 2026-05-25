@@ -156,7 +156,7 @@ export default function LifestyleSurveyScreen() {
 
     return (
         <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
 
                 <View style={styles.progressRow}>
                     <View style={[styles.progressDot, styles.progressDone]} />

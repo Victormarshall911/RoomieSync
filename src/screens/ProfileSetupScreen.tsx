@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 import { NIGERIAN_UNIVERSITIES } from '../data/nigerian_universities';
 import { NIGERIAN_COURSES } from '../data/nigerian_courses';
@@ -30,8 +30,8 @@ export default function ProfileSetupScreen() {
     };
 
     return (
-        <View style={styles.container}>
-            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+            <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
                 {/* Progress */}
                 <View style={styles.progressRow}>
                     <View style={[styles.progressDot, styles.progressActive]} />
@@ -119,7 +119,7 @@ export default function ProfileSetupScreen() {
                     </Text>
                 </TouchableOpacity>
             </ScrollView>
-        </View>
+        </KeyboardAvoidingView>
     );
 }
 

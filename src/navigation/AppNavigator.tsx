@@ -21,6 +21,18 @@ import EditListingScreen from '../screens/EditListingScreen';
 import TermsOfServiceScreen from '../screens/TermsOfServiceScreen';
 import { useTheme } from '../context/ThemeContext';
 import { Profile } from '../utils/matching';
+import { Listing } from '../screens/DiscoveryScreen';
+
+export const ONBOARDING_KEY = '@has_seen_onboarding';
+
+const SplashScreen = ({ COLORS }: { COLORS: any }) => (
+    <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
+        <View style={{ width: 90, height: 90, marginBottom: 24 }}>
+            <Image source={require('../../assets/logo.png')} style={{ width: '100%', height: '100%' }} />
+        </View>
+        <ActivityIndicator size="small" color={COLORS.primary} />
+    </View>
+);
 
 export type ProfileSetupData = {
     fullName: string;
@@ -47,8 +59,8 @@ export type RootStackParamList = {
     Verify: undefined;
     CreateListing: undefined;
     EditProfile: undefined;
-    ListingDetail: { listing: any };
-    EditListing: { listing: any };
+    ListingDetail: { listing: Listing };
+    EditListing: { listing: Listing };
     UserProfile: { profile: Profile };
     TermsOfService: undefined;
 };
@@ -63,7 +75,7 @@ export default function AppNavigator() {
     useEffect(() => {
         const checkOnboarding = async () => {
             try {
-                const value = await AsyncStorage.getItem('@has_seen_onboarding');
+                const value = await AsyncStorage.getItem(ONBOARDING_KEY);
                 setHasSeenOnboarding(value === 'true');
             } catch (error) {
                 setHasSeenOnboarding(false);
@@ -73,21 +85,7 @@ export default function AppNavigator() {
     }, []);
 
     if (loading || hasSeenOnboarding === null) {
-        return (
-            <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
-                <View style={{ 
-                    width: 90, 
-                    height: 90, 
-                    marginBottom: 24,
-                }}>
-                    <Image
-                        source={require('../../assets/logo.png')}
-                        style={{ width: '100%', height: '100%' }}
-                    />
-                </View>
-                <ActivityIndicator size="small" color={COLORS.primary} />
-            </View>
-        );
+        return <SplashScreen COLORS={COLORS} />;
     }
 
     return (
@@ -102,15 +100,22 @@ export default function AppNavigator() {
                 }}
             >
                 {!session ? (
-                    <>
-                        {!hasSeenOnboarding && (
+                    hasSeenOnboarding ? (
+                        <>
+                            <Stack.Screen name="Auth" component={AuthScreen} />
+                            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                            <Stack.Screen name="Preferences" component={PreferencesScreen} />
+                            <Stack.Screen name="LifestyleSurvey" component={LifestyleSurveyScreen} />
+                        </>
+                    ) : (
+                        <>
                             <Stack.Screen name="Onboarding" component={OnboardingScreen} />
-                        )}
-                        <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
-                        <Stack.Screen name="Preferences" component={PreferencesScreen} />
-                        <Stack.Screen name="LifestyleSurvey" component={LifestyleSurveyScreen} />
-                        <Stack.Screen name="Auth" component={AuthScreen} />
-                    </>
+                            <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
+                            <Stack.Screen name="Preferences" component={PreferencesScreen} />
+                            <Stack.Screen name="LifestyleSurvey" component={LifestyleSurveyScreen} />
+                            <Stack.Screen name="Auth" component={AuthScreen} />
+                        </>
+                    )
                 ) : !profile ? (
                     <>
                         <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />

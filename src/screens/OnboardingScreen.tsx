@@ -4,7 +4,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import { StackScreenProps } from '@react-navigation/stack';
-import { RootStackParamList } from '../navigation/AppNavigator';
+import { RootStackParamList, ONBOARDING_KEY } from '../navigation/AppNavigator';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -44,7 +44,7 @@ export default function OnboardingScreen({ navigation }: Props) {
 
     const completeOnboarding = async () => {
         try {
-            await AsyncStorage.setItem('@has_seen_onboarding', 'true');
+            await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
             navigation.replace('ProfileSetup');
         } catch (error) {
             console.error('Error saving onboarding status:', error);
