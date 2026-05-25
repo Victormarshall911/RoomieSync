@@ -9,23 +9,27 @@ RoomieSync is a premium mobile platform designed specifically for the unique stu
 ## ✨ Key Features
 
 ### 🔍 Smart Discovery
-- **Lifestyle Matching**: Our proprietary algorithm calculates a match percentage based on sleep habits, cleanliness, social preferences, and smoking.
+- **Lifestyle Matching**: Our proprietary algorithm calculates a match percentage based on sleep habits, cleanliness, social preferences, noise levels, study times, drinking habits, and pet preferences.
 - **Detailed Listings**: View full accommodation details including price, location, and comprehensive lister profiles.
+- **Listing Availability**: Owners can toggle their listings as "Taken" to automatically hide them and keep the discovery feed fresh.
 - **Advanced Filtering**: Filter by university, budget range, and specific lifestyle requirements.
 
 ### 💬 Real-time Communication
 - **Instant Chat**: High-performance real-time messaging powered by Supabase.
+- **Push Notifications**: Stay connected with real-time alerts for new messages and matches.
 - **Read Receipts & Unread Indicators**: Keep track of your conversations with unread message badges and dots.
 - **Seamless Flow**: Start a conversation directly from a listing detail page.
 
 ### 🛡️ Safety & Verification
 - **Student ID Verification**: Automated verification flow for student IDs to ensure a community of genuine students.
-- **Verified Badges**: Easily identify verified users with a premium success badge.
+- **Verified Restrictions**: Premium features, like creating a listing, require a verified profile to maintain trust and prevent spam.
+- **Reporting & Blocking**: Built-in moderation tools allow you to report inappropriate content or block abusive users directly from their profiles or chats.
 - **Admin Dashboard**: Specialized interface for administrators to review and approve student verifications.
 
-### 👤 Personalization
-- **Lifestyle Survey**: A comprehensive onboarding flow to capture your living habits.
-- **Flexible Profiles**: Update your department, budget, and location preferences at any time.
+### 👤 Personalization & Onboarding
+- **Unauthenticated Wizard**: A beautiful, step-by-step onboarding experience to set up your profile, lifestyle survey, and profile photo *before* committing to an account.
+- **Comprehensive University Data**: Searchable, static datasets of major Nigerian universities and courses for accurate data entry.
+- **Flexible Profiles**: Update your department, budget, location preferences, and avatar at any time.
 - **Dark Mode Support**: A premium design system that supports both Light and sleek Dark modes.
 
 ---
