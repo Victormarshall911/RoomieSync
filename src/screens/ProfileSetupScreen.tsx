@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import { Dropdown } from 'react-native-element-dropdown';
+import { NIGERIAN_UNIVERSITIES } from '../data/nigerian_universities';
+import { NIGERIAN_COURSES } from '../data/nigerian_courses';
 import { useNavigation } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
@@ -44,10 +47,48 @@ export default function ProfileSetupScreen() {
 
                 <View style={styles.card}>
                     <InputField COLORS={COLORS} styles={styles} label="Full Name" placeholder="e.g. Victor Adebayo" value={fullName} onChangeText={setFullName} />
-                    <InputField COLORS={COLORS} styles={styles} label="University" placeholder="e.g. UNILAG" value={university} onChangeText={setUniversity} />
-                    <InputField COLORS={COLORS} styles={styles} label="Department" placeholder="e.g. Computer Science" value={department} onChangeText={setDepartment} />
+                    
+                    <Text style={styles.inputLabel}>University</Text>
+                    <Dropdown
+                        style={[styles.dropdown, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border }]}
+                        placeholderStyle={[styles.placeholderStyle, { color: COLORS.textMuted }]}
+                        selectedTextStyle={[styles.selectedTextStyle, { color: COLORS.textPrimary }]}
+                        inputSearchStyle={[styles.inputSearchStyle, { color: COLORS.textPrimary, borderColor: COLORS.border }]}
+                        containerStyle={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+                        itemTextStyle={{ color: COLORS.textPrimary }}
+                        activeColor={COLORS.primaryFaded}
+                        data={NIGERIAN_UNIVERSITIES}
+                        search
+                        maxHeight={300}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select University"
+                        searchPlaceholder="Search..."
+                        value={university}
+                        onChange={item => setUniversity(item.value)}
+                    />
 
-                    <Text style={styles.inputLabel}>Gender</Text>
+                    <Text style={[styles.inputLabel, { marginTop: SPACING.md }]}>Department / Course</Text>
+                    <Dropdown
+                        style={[styles.dropdown, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border }]}
+                        placeholderStyle={[styles.placeholderStyle, { color: COLORS.textMuted }]}
+                        selectedTextStyle={[styles.selectedTextStyle, { color: COLORS.textPrimary }]}
+                        inputSearchStyle={[styles.inputSearchStyle, { color: COLORS.textPrimary, borderColor: COLORS.border }]}
+                        containerStyle={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+                        itemTextStyle={{ color: COLORS.textPrimary }}
+                        activeColor={COLORS.primaryFaded}
+                        data={NIGERIAN_COURSES}
+                        search
+                        maxHeight={300}
+                        labelField="label"
+                        valueField="value"
+                        placeholder="Select Department"
+                        searchPlaceholder="Search..."
+                        value={department}
+                        onChange={item => setDepartment(item.value)}
+                    />
+
+                    <Text style={[styles.inputLabel, { marginTop: SPACING.md }]}>Gender</Text>
                     <View style={styles.genderContainer}>
                         {['Male', 'Female'].map((g) => (
                             <TouchableOpacity
@@ -205,5 +246,22 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: '#FFFFFF',
         ...FONTS.bodyBold,
         fontSize: 16,
+    },
+    dropdown: {
+        height: 50,
+        borderWidth: 1,
+        borderRadius: RADIUS.md,
+        paddingHorizontal: SPACING.md,
+    },
+    placeholderStyle: {
+        ...FONTS.body,
+    },
+    selectedTextStyle: {
+        ...FONTS.body,
+    },
+    inputSearchStyle: {
+        height: 40,
+        ...FONTS.body,
+        borderRadius: RADIUS.sm,
     },
 });

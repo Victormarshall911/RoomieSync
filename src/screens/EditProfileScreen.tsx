@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator, KeyboardAvoidingView, Platform } from 'react-native';
+import { Dropdown } from 'react-native-element-dropdown';
+import { NIGERIAN_UNIVERSITIES } from '../data/nigerian_universities';
+import { NIGERIAN_COURSES } from '../data/nigerian_courses';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -19,6 +22,10 @@ const CLEANLINESS_OPTIONS = [
 ];
 const SOCIAL_OPTIONS = ['Rarely', 'Guests often'];
 const SMOKING_OPTIONS = ['No', 'Yes'];
+const NOISE_OPTIONS = ['Quiet', 'Moderate', 'Lively'];
+const STUDY_OPTIONS = ['Morning', 'Night', 'Varies'];
+const DRINKING_OPTIONS = ['Often', 'Socially', 'Rarely/Never'];
+const PETS_OPTIONS = ['Love them', 'Okay with them', 'Prefer no pets'];
 
 export default function EditProfileScreen() {
     const navigation = useNavigation();
@@ -41,6 +48,10 @@ export default function EditProfileScreen() {
     const [cleanliness, setCleanliness] = useState<number | null>(profile?.cleanliness || null);
     const [socializing, setSocializing] = useState(profile?.socializing || '');
     const [smoking, setSmoking] = useState(profile?.smoking || '');
+    const [noiseLevel, setNoiseLevel] = useState(profile?.noise_level || '');
+    const [studyTime, setStudyTime] = useState(profile?.study_time || '');
+    const [drinkingHabit, setDrinkingHabit] = useState(profile?.drinking_habit || '');
+    const [petsPreference, setPetsPreference] = useState(profile?.pets_preference || '');
 
     const pickImage = async () => {
         try {
@@ -120,6 +131,10 @@ export default function EditProfileScreen() {
                     cleanliness: cleanliness,
                     socializing: socializing || null,
                     smoking: smoking || null,
+                    noise_level: noiseLevel || null,
+                    study_time: studyTime || null,
+                    drinking_habit: drinkingHabit || null,
+                    pets_preference: petsPreference || null,
                     avatar_url: avatarUrl,
                 })
                 .eq('id', user?.id);
@@ -176,8 +191,46 @@ export default function EditProfileScreen() {
                         <Text style={styles.sectionTitle}>Basic Info</Text>
                         <View style={styles.card}>
                             <Field label="Full Name" value={fullName} onChangeText={setFullName} placeholder="Your name" COLORS={COLORS} styles={styles} />
-                            <Field label="University" value={university} onChangeText={setUniversity} placeholder="e.g. UNILAG" COLORS={COLORS} styles={styles} />
-                            <Field label="Department" value={department} onChangeText={setDepartment} placeholder="e.g. Computer Science" COLORS={COLORS} styles={styles} />
+                            
+                            <Text style={styles.fieldLabel}>University</Text>
+                            <Dropdown
+                                style={[styles.dropdown, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border }]}
+                                placeholderStyle={[styles.placeholderStyle, { color: COLORS.textMuted }]}
+                                selectedTextStyle={[styles.selectedTextStyle, { color: COLORS.textPrimary }]}
+                                inputSearchStyle={[styles.inputSearchStyle, { color: COLORS.textPrimary, borderColor: COLORS.border }]}
+                                containerStyle={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+                                itemTextStyle={{ color: COLORS.textPrimary }}
+                                activeColor={COLORS.primaryFaded}
+                                data={NIGERIAN_UNIVERSITIES}
+                                search
+                                maxHeight={300}
+                                labelField="label"
+                                valueField="value"
+                                placeholder="Select University"
+                                searchPlaceholder="Search..."
+                                value={university}
+                                onChange={item => setUniversity(item.value)}
+                            />
+
+                            <Text style={[styles.fieldLabel, { marginTop: SPACING.md }]}>Department</Text>
+                            <Dropdown
+                                style={[styles.dropdown, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border, marginBottom: SPACING.md }]}
+                                placeholderStyle={[styles.placeholderStyle, { color: COLORS.textMuted }]}
+                                selectedTextStyle={[styles.selectedTextStyle, { color: COLORS.textPrimary }]}
+                                inputSearchStyle={[styles.inputSearchStyle, { color: COLORS.textPrimary, borderColor: COLORS.border }]}
+                                containerStyle={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+                                itemTextStyle={{ color: COLORS.textPrimary }}
+                                activeColor={COLORS.primaryFaded}
+                                data={NIGERIAN_COURSES}
+                                search
+                                maxHeight={300}
+                                labelField="label"
+                                valueField="value"
+                                placeholder="Select Department"
+                                searchPlaceholder="Search..."
+                                value={department}
+                                onChange={item => setDepartment(item.value)}
+                            />
 
                             <Text style={styles.fieldLabel}>Gender</Text>
                             <View style={styles.chipRow}>
@@ -277,6 +330,58 @@ export default function EditProfileScreen() {
                                         onPress={() => setSmoking(opt)}
                                     >
                                         <Text style={[styles.chipText, smoking === opt && styles.chipTextActive]}>{opt}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={styles.fieldLabel}>Noise Level</Text>
+                            <View style={styles.chipRow}>
+                                {NOISE_OPTIONS.map((opt) => (
+                                    <TouchableOpacity
+                                        key={opt}
+                                        style={[styles.chip, noiseLevel === opt && styles.chipActive]}
+                                        onPress={() => setNoiseLevel(opt)}
+                                    >
+                                        <Text style={[styles.chipText, noiseLevel === opt && styles.chipTextActive]}>{opt}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={styles.fieldLabel}>Study / Focus Time</Text>
+                            <View style={styles.chipRow}>
+                                {STUDY_OPTIONS.map((opt) => (
+                                    <TouchableOpacity
+                                        key={opt}
+                                        style={[styles.chip, studyTime === opt && styles.chipActive]}
+                                        onPress={() => setStudyTime(opt)}
+                                    >
+                                        <Text style={[styles.chipText, studyTime === opt && styles.chipTextActive]}>{opt}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={styles.fieldLabel}>Drinking Habit</Text>
+                            <View style={styles.chipRow}>
+                                {DRINKING_OPTIONS.map((opt) => (
+                                    <TouchableOpacity
+                                        key={opt}
+                                        style={[styles.chip, drinkingHabit === opt && styles.chipActive]}
+                                        onPress={() => setDrinkingHabit(opt)}
+                                    >
+                                        <Text style={[styles.chipText, drinkingHabit === opt && styles.chipTextActive]}>{opt}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </View>
+
+                            <Text style={styles.fieldLabel}>Pets Preference</Text>
+                            <View style={styles.chipRow}>
+                                {PETS_OPTIONS.map((opt) => (
+                                    <TouchableOpacity
+                                        key={opt}
+                                        style={[styles.chip, petsPreference === opt && styles.chipActive]}
+                                        onPress={() => setPetsPreference(opt)}
+                                    >
+                                        <Text style={[styles.chipText, petsPreference === opt && styles.chipTextActive]}>{opt}</Text>
                                     </TouchableOpacity>
                                 ))}
                             </View>
@@ -469,5 +574,22 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: '#FFFFFF',
         ...FONTS.bodyBold,
         fontSize: 16,
+    },
+    dropdown: {
+        height: 50,
+        borderWidth: 1,
+        borderRadius: RADIUS.md,
+        paddingHorizontal: SPACING.md,
+    },
+    placeholderStyle: {
+        ...FONTS.body,
+    },
+    selectedTextStyle: {
+        ...FONTS.body,
+    },
+    inputSearchStyle: {
+        height: 40,
+        ...FONTS.body,
+        borderRadius: RADIUS.sm,
     },
 });
