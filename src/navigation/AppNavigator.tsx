@@ -1,8 +1,10 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, CardStyleInterpolators } from '@react-navigation/stack';
 import { useAuth } from '../context/AuthContext';
 import { View, ActivityIndicator, Image } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import OnboardingScreen from '../screens/OnboardingScreen';
 import AuthScreen from '../screens/AuthScreen';
 import ProfileSetupScreen from '../screens/ProfileSetupScreen';
 import PreferencesScreen from '../screens/PreferencesScreen';
@@ -34,6 +36,7 @@ export type PreferencesData = ProfileSetupData & {
 };
 
 export type RootStackParamList = {
+    Onboarding: undefined;
     Auth: undefined;
     ProfileSetup: undefined;
     Preferences: { profileData: ProfileSetupData };
@@ -55,8 +58,21 @@ const Stack = createStackNavigator<RootStackParamList>();
 export default function AppNavigator() {
     const { session, profile, loading } = useAuth();
     const { colors: COLORS } = useTheme();
+    const [hasSeenOnboarding, setHasSeenOnboarding] = useState<boolean | null>(null);
 
-    if (loading) {
+    useEffect(() => {
+        const checkOnboarding = async () => {
+            try {
+                const value = await AsyncStorage.getItem('@has_seen_onboarding');
+                setHasSeenOnboarding(value === 'true');
+            } catch (error) {
+                setHasSeenOnboarding(false);
+            }
+        };
+        checkOnboarding();
+    }, []);
+
+    if (loading || hasSeenOnboarding === null) {
         return (
             <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: COLORS.bg }}>
                 <View style={{ 
@@ -86,7 +102,12 @@ export default function AppNavigator() {
                 }}
             >
                 {!session ? (
-                    <Stack.Screen name="Auth" component={AuthScreen} />
+                    <>
+                        {!hasSeenOnboarding && (
+                            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
+                        )}
+                        <Stack.Screen name="Auth" component={AuthScreen} />
+                    </>
                 ) : !profile ? (
                     <>
                         <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
