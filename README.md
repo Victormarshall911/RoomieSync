@@ -103,6 +103,14 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request or open an issue for any bugs or feature requests.
+We welcome contributions from the community! To contribute to RoomieSync, please follow these steps:
+
+1. **Fork the repository** to your own GitHub account.
+2. **Create a new branch** for your feature or bugfix (`git checkout -b feature/amazing-feature`).
+3. **Commit your changes** with clear and descriptive messages (`git commit -m 'Add amazing feature'`).
+4. **Push to your branch** (`git push origin feature/amazing-feature`).
+5. **Open a Pull Request** against the `main` branch of this repository.
+
+Please ensure your code follows the existing style, includes appropriate TypeScript types, and passes all compilation checks (`npx tsc --noEmit`). If you are adding a major feature, please open an issue first to discuss it.
 
 *Built with ❤️ for Nigerian Students.*

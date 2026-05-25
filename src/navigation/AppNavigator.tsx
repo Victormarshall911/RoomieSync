@@ -107,6 +107,7 @@ export default function AppNavigator() {
                             <Stack.Screen name="ProfileSetup" component={ProfileSetupScreen} />
                             <Stack.Screen name="Preferences" component={PreferencesScreen} />
                             <Stack.Screen name="LifestyleSurvey" component={LifestyleSurveyScreen} />
+                            <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
                         </>
                     ) : (
                         <>
@@ -115,6 +116,7 @@ export default function AppNavigator() {
                             <Stack.Screen name="Preferences" component={PreferencesScreen} />
                             <Stack.Screen name="LifestyleSurvey" component={LifestyleSurveyScreen} />
                             <Stack.Screen name="Auth" component={AuthScreen} />
+                            <Stack.Screen name="TermsOfService" component={TermsOfServiceScreen} />
                         </>
                     )
                 ) : !profile ? (
