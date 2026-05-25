@@ -127,6 +127,7 @@ export default function LifestyleSurveyScreen() {
             study_time: selections.study_time,
             drinking_habit: selections.drinking_habit,
             pets_preference: selections.pets_preference,
+            localAvatarUri: profileData.localAvatarUri,
         };
 
         if (!user) {

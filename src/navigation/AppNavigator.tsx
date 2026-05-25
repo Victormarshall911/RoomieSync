@@ -39,6 +39,7 @@ export type ProfileSetupData = {
     university: string;
     department: string;
     gender: 'Male' | 'Female';
+    localAvatarUri?: string;
 };
 
 export type PreferencesData = ProfileSetupData & {

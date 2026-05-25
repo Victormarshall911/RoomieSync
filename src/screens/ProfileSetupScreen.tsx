@@ -1,5 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import Avatar from '../components/Avatar';
+import { Ionicons } from '@expo/vector-icons';
 import { Dropdown } from 'react-native-element-dropdown';
 import { NIGERIAN_UNIVERSITIES } from '../data/nigerian_universities';
 import { NIGERIAN_COURSES } from '../data/nigerian_courses';
@@ -18,6 +21,24 @@ export default function ProfileSetupScreen() {
     const [university, setUniversity] = useState('');
     const [department, setDepartment] = useState('');
     const [gender, setGender] = useState<'Male' | 'Female' | null>(null);
+    const [localAvatarUri, setLocalAvatarUri] = useState<string>('');
+
+    const pickImage = async () => {
+        try {
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                allowsEditing: true,
+                aspect: [1, 1],
+                quality: 0.5,
+            });
+
+            if (!result.canceled) {
+                setLocalAvatarUri(result.assets[0].uri);
+            }
+        } catch (error) {
+            Alert.alert('Error', 'Failed to pick image');
+        }
+    };
 
     const handleNext = () => {
         if (!fullName || !university || !department || !gender) {
@@ -25,7 +46,7 @@ export default function ProfileSetupScreen() {
             return;
         }
         navigation.navigate('Preferences', {
-            profileData: { fullName, university, department, gender }
+            profileData: { fullName, university, department, gender, localAvatarUri }
         });
     };
 
@@ -44,6 +65,20 @@ export default function ProfileSetupScreen() {
                 <Text style={styles.stepLabel}>Step 1 of 3</Text>
                 <Text style={styles.title}>Basic Info</Text>
                 <Text style={styles.subtitle}>Tell us a bit about yourself</Text>
+
+                <View style={styles.avatarSection}>
+                    <TouchableOpacity style={styles.avatarContainer} onPress={pickImage}>
+                        <Avatar
+                            name={fullName || '?'}
+                            imageUrl={localAvatarUri}
+                            size="xl"
+                        />
+                        <View style={styles.editAvatarIcon}>
+                            <Ionicons name="camera" size={20} color="#fff" />
+                        </View>
+                    </TouchableOpacity>
+                    <Text style={styles.avatarHint}>Add a profile photo</Text>
+                </View>
 
                 <View style={styles.card}>
                     <InputField COLORS={COLORS} styles={styles} label="Full Name" placeholder="e.g. Victor Adebayo" value={fullName} onChangeText={setFullName} />
@@ -150,6 +185,34 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: SPACING.lg,
+    },
+    avatarSection: {
+        alignItems: 'center',
+        marginBottom: SPACING.lg,
+    },
+    avatarContainer: {
+        position: 'relative',
+        width: 100,
+        height: 100,
+        borderRadius: 50,
+        marginBottom: SPACING.sm,
+    },
+    editAvatarIcon: {
+        position: 'absolute',
+        right: 0,
+        bottom: 0,
+        backgroundColor: COLORS.primary,
+        width: 32,
+        height: 32,
+        borderRadius: 16,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderWidth: 2,
+        borderColor: COLORS.bgCard,
+    },
+    avatarHint: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
     },
     progressDot: {
         width: 10,

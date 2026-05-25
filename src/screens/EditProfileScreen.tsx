@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Avatar from '../components/Avatar';
 import GradientButton from '../components/GradientButton';
 import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { uploadAvatarToSupabase } from '../utils/imageUpload';
 
 const SLEEP_OPTIONS = ['Early Bird', 'Night Owl'];
 const CLEANLINESS_OPTIONS = [
@@ -71,36 +72,10 @@ export default function EditProfileScreen() {
     };
 
     const uploadImage = async (uri: string) => {
+        if (!user?.id) return;
         setUploadingAvatar(true);
         try {
-            const response = await fetch(uri);
-            const blob = await response.blob();
-            const reader = new FileReader();
-            
-            const arrayBuffer = await new Promise<ArrayBuffer>((resolve, reject) => {
-                reader.onload = () => resolve(reader.result as ArrayBuffer);
-                reader.onerror = reject;
-                reader.readAsArrayBuffer(blob);
-            });
-
-            const fileExt = uri.split('.').pop()?.toLowerCase();
-            const fileName = `avatar.${fileExt}`;
-            const filePath = `${user?.id}/${fileName}`;
-
-            const { error: uploadError } = await supabase.storage
-                .from('avatars')
-                .upload(filePath, arrayBuffer, {
-                    upsert: true,
-                    contentType: blob.type
-                });
-
-            if (uploadError) throw uploadError;
-
-            // Get public URL
-            const { data: { publicUrl } } = supabase.storage
-                .from('avatars')
-                .getPublicUrl(filePath);
-
+            const publicUrl = await uploadAvatarToSupabase(uri, user.id);
             setAvatarUrl(publicUrl);
         } catch (error: any) {
             Alert.alert('Error uploading image', error.message);

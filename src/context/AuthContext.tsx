@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { Profile } from '../utils/matching';
 import { registerForPushNotificationsAsync, savePushToken } from '../hooks/useNotifications';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { uploadAvatarToSupabase } from '../utils/imageUpload';
 
 interface AuthContextType {
     session: Session | null;
@@ -49,6 +50,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             const pendingProfileStr = await AsyncStorage.getItem('@pending_profile');
             if (pendingProfileStr) {
                 const pendingProfile = JSON.parse(pendingProfileStr);
+                
+                if (pendingProfile.localAvatarUri) {
+                    try {
+                        const publicUrl = await uploadAvatarToSupabase(pendingProfile.localAvatarUri, userId);
+                        pendingProfile.avatar_url = publicUrl;
+                    } catch (e) {
+                        console.error('Failed to upload avatar during onboarding', e);
+                    }
+                    delete pendingProfile.localAvatarUri;
+                }
+
                 await supabase.from('profiles').upsert({ id: userId, ...pendingProfile });
                 await AsyncStorage.removeItem('@pending_profile');
             }
