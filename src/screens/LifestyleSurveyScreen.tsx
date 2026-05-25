@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -84,11 +85,24 @@ export default function LifestyleSurveyScreen() {
 
     const [selections, setSelections] = useState<Record<string, any>>({});
     const [loading, setLoading] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0);
 
-    const allSelected = Object.keys(LIFESTYLE_OPTIONS).every((k) => selections[k] !== undefined);
+    const keys = Object.keys(LIFESTYLE_OPTIONS);
+    const isFinished = currentStep >= keys.length;
+    const currentKey = keys[currentStep] as keyof typeof LIFESTYLE_OPTIONS;
+    const currentCategory = LIFESTYLE_OPTIONS[currentKey];
+
+    const allSelected = keys.every((k) => selections[k] !== undefined);
 
     const handleSelect = (category: string, value: any) => {
         setSelections((prev) => ({ ...prev, [category]: value }));
+        
+        // Auto-advance to next question
+        if (currentStep < keys.length) {
+            setTimeout(() => {
+                setCurrentStep(prev => prev + 1);
+            }, 300);
+        }
     };
 
     const handleSubmit = async () => {
@@ -156,17 +170,18 @@ export default function LifestyleSurveyScreen() {
                 <Text style={styles.title}>Lifestyle</Text>
                 <Text style={styles.subtitle}>This helps us find your ideal match</Text>
 
-                {Object.entries(LIFESTYLE_OPTIONS).map(([key, category]) => (
-                    <View key={key} style={styles.card}>
-                        <Text style={styles.cardTitle}>{category.label}</Text>
+                {!isFinished ? (
+                    <View style={styles.card}>
+                        <Text style={styles.stepIndicator}>Question {currentStep + 1} of {keys.length}</Text>
+                        <Text style={styles.cardTitle}>{currentCategory.label}</Text>
                         <View style={styles.optionsGrid}>
-                            {category.options.map((opt) => {
-                                const isSelected = selections[key] === opt.value;
+                            {currentCategory.options.map((opt) => {
+                                const isSelected = selections[currentKey] === opt.value;
                                 return (
                                     <TouchableOpacity
                                         key={opt.value}
                                         style={[styles.optionChip, isSelected && styles.optionChipActive]}
-                                        onPress={() => handleSelect(key, opt.value)}
+                                        onPress={() => handleSelect(currentKey, opt.value)}
                                         activeOpacity={0.7}
                                     >
                                         <Text style={[styles.optionLabel, isSelected && styles.optionLabelActive]}>
@@ -179,16 +194,36 @@ export default function LifestyleSurveyScreen() {
                                 );
                             })}
                         </View>
+                        
+                        <View style={{flexDirection: 'row', justifyContent: 'space-between', marginTop: 24}}>
+                            <TouchableOpacity 
+                                onPress={() => setCurrentStep(prev => Math.max(0, prev - 1))}
+                                disabled={currentStep === 0}
+                                style={{opacity: currentStep === 0 ? 0.3 : 1, padding: 8}}
+                            >
+                                <Text style={{color: COLORS.textSecondary, ...FONTS.bodyBold}}>Back</Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
-                ))}
-
-                <GradientButton
-                    title="Complete Profile"
-                    onPress={handleSubmit}
-                    loading={loading}
-                    disabled={!allSelected}
-                    style={{ marginTop: SPACING.sm }}
-                />
+                ) : (
+                    <View style={[styles.card, {alignItems: 'center', paddingVertical: 40}]}>
+                        <Ionicons name="checkmark-circle" size={80} color={COLORS.success} style={{marginBottom: 20}} />
+                        <Text style={styles.title}>All Done!</Text>
+                        <Text style={[styles.subtitle, {marginBottom: 30}]}>You've answered all lifestyle questions.</Text>
+                        
+                        <GradientButton
+                            title="Complete Profile"
+                            onPress={handleSubmit}
+                            loading={loading}
+                            disabled={!allSelected}
+                            style={{ width: '100%' }}
+                        />
+                        
+                        <TouchableOpacity onPress={() => setCurrentStep(0)} style={{marginTop: 20, padding: 10}}>
+                            <Text style={{color: COLORS.primary, ...FONTS.bodyBold}}>Review Answers</Text>
+                        </TouchableOpacity>
+                    </View>
+                )}
             </ScrollView>
         </View>
     );
@@ -237,6 +272,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         padding: SPACING.lg,
         borderWidth: 1, borderColor: COLORS.border,
         marginBottom: SPACING.md,
+    },
+    stepIndicator: {
+        ...FONTS.caption, color: COLORS.primary, marginBottom: SPACING.xs, fontWeight: 'bold', textTransform: 'uppercase'
     },
     cardTitle: {
         ...FONTS.h3, color: COLORS.textPrimary, marginBottom: SPACING.md,

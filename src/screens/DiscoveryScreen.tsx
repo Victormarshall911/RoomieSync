@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl, Animated, Platform } from 'react-native';
+import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl, Animated, Platform, Alert } from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
@@ -176,6 +176,21 @@ export default function DiscoveryScreen() {
         if (!loadingMore && hasMore && !loading) {
             fetchListings();
         }
+    };
+
+    const handleCreateListing = () => {
+        if (!profile?.is_verified) {
+            Alert.alert(
+                'Verification Required',
+                'You must be a verified student to create a listing. Please verify your student ID in your profile.',
+                [
+                    { text: 'Cancel', style: 'cancel' },
+                    { text: 'Verify Now', onPress: () => navigation.navigate('Verify') }
+                ]
+            );
+            return;
+        }
+        navigation.navigate('CreateListing');
     };
 
     const filteredListings = listings.filter(l =>
@@ -372,7 +387,7 @@ export default function DiscoveryScreen() {
                             <Text style={styles.emptyText}>Be the first to post a room or find a roommate</Text>
                             <TouchableOpacity
                                 style={styles.emptyCta}
-                                onPress={() => navigation.navigate('CreateListing')}
+                                onPress={handleCreateListing}
                                 activeOpacity={0.8}
                             >
                                 <Ionicons name="add" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
@@ -420,7 +435,7 @@ export default function DiscoveryScreen() {
             <TouchableOpacity
                 style={styles.fab}
                 activeOpacity={0.8}
-                onPress={() => navigation.navigate('CreateListing')}
+                onPress={handleCreateListing}
             >
                 <Ionicons name="add" size={28} color="#FFFFFF" />
             </TouchableOpacity>
