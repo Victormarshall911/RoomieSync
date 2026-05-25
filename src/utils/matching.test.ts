@@ -14,6 +14,10 @@ describe('calculateMatchPercentage', () => {
         cleanliness: 8,
         socializing: 'Rarely',
         smoking: 'No',
+        noise_level: 'Moderate',
+        study_time: 'Morning',
+        drinking_habit: 'Rarely/Never',
+        pets_preference: 'Okay with them',
         is_verified: true,
     };
 
@@ -25,10 +29,17 @@ describe('calculateMatchPercentage', () => {
     it('should return 0% for completely opposite profiles', () => {
         const oppositeProfile: Profile = {
             ...baseProfile,
+            budget_min: 100000,
+            budget_max: 200000,
+            location_preference: 'Island',
             sleep_habit: 'Night Owl',
             cleanliness: 1, // Diff is 7, outside tolerance of 2
             socializing: 'Guests often',
             smoking: 'Yes',
+            noise_level: 'Lively',
+            study_time: 'Night',
+            drinking_habit: 'Often',
+            pets_preference: 'Prefer no pets',
         };
         const score = calculateMatchPercentage(baseProfile, oppositeProfile);
         expect(score).toBe(0);
@@ -39,19 +50,22 @@ describe('calculateMatchPercentage', () => {
             ...baseProfile,
             cleanliness: 6, // Diff is 2, inside tolerance
         };
-        // Sleep (25) + Cleanliness (approx 20) + Social (25) + Smoking (25)
         const score = calculateMatchPercentage(baseProfile, similarProfile);
         expect(score).toBeGreaterThan(75);
         expect(score).toBeLessThan(100);
     });
 
-    it('should return 50% if two major habits match', () => {
+    it('should return around 52% if about half of habits match', () => {
         const halfMatch: Profile = {
             ...baseProfile,
-            sleep_habit: 'Night Owl',
-            socializing: 'Guests often',
+            sleep_habit: 'Night Owl', // lose 10
+            noise_level: 'Lively', // lose 10
+            study_time: 'Night', // lose 8
+            socializing: 'Guests often', // lose 8
+            drinking_habit: 'Often', // lose 6
+            smoking: 'Yes', // lose 6
         };
         const score = calculateMatchPercentage(baseProfile, halfMatch);
-        expect(score).toBe(50);
+        expect(score).toBe(52); // Retains Budget (25), Location (15), Cleanliness (12)
     });
 });
