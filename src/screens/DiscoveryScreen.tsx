@@ -24,6 +24,7 @@ export interface Listing {
     searching_for: 'Looking for Roommate' | 'Listing a Space';
     creator_name_demo?: string;
     created_at: string;
+    is_available?: boolean;
     profiles?: Profile; // Joined profile
 }
 
@@ -63,7 +64,7 @@ function AnimatedCard({ index, children, style }: { index: number; children: Rea
 }
 
 export default function DiscoveryScreen() {
-    const { user, profile } = useAuth();
+    const { user, profile, blockedUsers } = useAuth();
     const navigation = useNavigation<any>();
     const { colors: COLORS, isDark } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
@@ -131,6 +132,7 @@ export default function DiscoveryScreen() {
             let query = supabase
                 .from('listings')
                 .select('*, profiles(*)')
+                .eq('is_available', true)
                 .range(from, to)
                 .order('created_at', { ascending: false });
 
@@ -143,11 +145,12 @@ export default function DiscoveryScreen() {
             if (fetchError) throw fetchError;
 
             const newListings = (data || []) as Listing[];
+            const filteredNewListings = newListings.filter(l => !blockedUsers.includes(l.user_id || ''));
 
             if (isRefreshing) {
-                setListings(newListings);
+                setListings(filteredNewListings);
             } else {
-                setListings(prev => [...prev, ...newListings]);
+                setListings(prev => [...prev, ...filteredNewListings]);
             }
 
             setHasMore(newListings.length === PAGE_SIZE);
@@ -160,7 +163,7 @@ export default function DiscoveryScreen() {
             setRefreshing(false);
             setLoadingMore(false);
         }
-    }, [filterStatus]);
+    }, [filterStatus, blockedUsers]);
 
     useFocusEffect(
         useCallback(() => {

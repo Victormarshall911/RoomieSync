@@ -11,6 +11,8 @@ interface AuthContextType {
     user: User | null;
     profile: Profile | null;
     loading: boolean;
+    blockedUsers: string[];
+    blockUser: (blockedId: string) => Promise<void>;
     signOut: () => Promise<void>;
     fetchProfile: () => Promise<void>;
 }
@@ -22,6 +24,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const [user, setUser] = useState<User | null>(null);
     const [profile, setProfile] = useState<Profile | null>(null);
     const [loading, setLoading] = useState(true);
+    const [blockedUsers, setBlockedUsers] = useState<string[]>([]);
 
     useEffect(() => {
         supabase.auth.getSession().then(({ data: { session } }) => {
@@ -73,6 +76,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
             if (data) {
                 setProfile(data);
+                
+                // Fetch blocked users
+                const { data: blocks } = await supabase.from('blocks').select('blocked_id').eq('blocker_id', userId);
+                if (blocks) {
+                    setBlockedUsers(blocks.map(b => b.blocked_id));
+                }
+
                 // Register for push notifications
                 const token = await registerForPushNotificationsAsync();
                 if (token) {
@@ -86,10 +96,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const signOut = async () => {
         await supabase.auth.signOut();
+        setBlockedUsers([]);
+    };
+
+    const blockUser = async (blockedId: string) => {
+        if (!user) return;
+        try {
+            const { error } = await supabase.from('blocks').insert({ blocker_id: user.id, blocked_id: blockedId });
+            if (error) throw error;
+            setBlockedUsers(prev => [...prev, blockedId]);
+        } catch (error) {
+            console.error('Error blocking user:', error);
+            throw error;
+        }
     };
 
     return (
-        <AuthContext.Provider value={{ session, user, profile, loading, signOut, fetchProfile: () => user ? fetchProfile(user.id) : Promise.resolve() }}>
+        <AuthContext.Provider value={{ session, user, profile, loading, blockedUsers, blockUser, signOut, fetchProfile: () => user ? fetchProfile(user.id) : Promise.resolve() }}>
             {children}
         </AuthContext.Provider>
     );

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
@@ -13,13 +13,14 @@ import { SPACING, RADIUS, FONTS } from '../utils/theme';
 export default function ListingDetailScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
-    const { user, profile: myProfile } = useAuth();
+    const { user, profile: myProfile, blockUser } = useAuth();
     const { colors: COLORS } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
     const { listing } = route.params;
     const lister: Profile | undefined = listing.profiles;
     const creatorName = lister?.full_name || listing.creator_name_demo || 'User';
+    const [isAvailable, setIsAvailable] = useState(listing.is_available !== false);
 
     const matchPct = (myProfile && lister) ? calculateMatchPercentage(myProfile as Profile, lister) : 0;
     const matchColor = getMatchColor(matchPct, COLORS);
@@ -58,6 +59,61 @@ export default function ListingDetailScreen() {
         if (lister) {
             navigation.navigate('UserProfile', { profile: lister });
         }
+    };
+
+    const toggleAvailability = async () => {
+        const newStatus = !isAvailable;
+        setIsAvailable(newStatus);
+        const { error } = await supabase.from('listings').update({ is_available: newStatus }).eq('id', listing.id);
+        if (error) {
+            setIsAvailable(!newStatus);
+            Alert.alert('Error', 'Failed to update availability');
+        }
+    };
+
+    const handleReport = () => {
+        Alert.alert(
+            'Report Listing',
+            'Why are you reporting this listing?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Inappropriate Content', onPress: () => submitReport('Inappropriate Content') },
+                { text: 'Scam or Spam', onPress: () => submitReport('Scam or Spam') },
+            ]
+        );
+    };
+
+    const submitReport = async (reason: string) => {
+        if (!user || !lister?.id) return;
+        try {
+            await supabase.from('reports').insert({
+                reporter_id: user.id,
+                reported_user_id: lister.id,
+                listing_id: listing.id,
+                reason,
+            });
+            Alert.alert('Reported', 'Thank you for keeping our community safe.');
+        } catch (e) {
+            Alert.alert('Error', 'Failed to submit report');
+        }
+    };
+
+    const handleBlock = () => {
+        Alert.alert(
+            'Block User',
+            'Are you sure you want to block this user? You will no longer see their listings or messages.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Block', style: 'destructive', onPress: async () => {
+                    try {
+                        if (lister?.id) await blockUser(lister.id);
+                        navigation.goBack();
+                    } catch (e) {
+                        Alert.alert('Error', 'Failed to block user');
+                    }
+                }}
+            ]
+        );
     };
 
     // Match breakdown items
@@ -99,8 +155,14 @@ export default function ListingDetailScreen() {
                         </TouchableOpacity>
                         <Text style={styles.headerTitle}>Listing Details</Text>
                     </View>
-                    {listing.user_id === user?.id && (
+                    {listing.user_id === user?.id ? (
                         <View style={styles.ownerActions}>
+                            <TouchableOpacity 
+                                onPress={toggleAvailability} 
+                                style={[styles.actionButton, { backgroundColor: isAvailable ? COLORS.bgCard : COLORS.success }]}
+                            >
+                                <Ionicons name={isAvailable ? "eye-outline" : "eye-off-outline"} size={22} color={isAvailable ? COLORS.primaryLight : '#fff'} />
+                            </TouchableOpacity>
                             <TouchableOpacity 
                                 onPress={() => navigation.navigate('EditListing', { listing })} 
                                 style={styles.actionButton}
@@ -137,6 +199,18 @@ export default function ListingDetailScreen() {
                                 <Ionicons name="trash-outline" size={22} color={COLORS.accent} />
                             </TouchableOpacity>
                         </View>
+                    ) : (
+                        listing.user_id && lister && (
+                            <TouchableOpacity onPress={() => {
+                                Alert.alert('Options', '', [
+                                    { text: 'Report User', onPress: handleReport },
+                                    { text: 'Block User', onPress: handleBlock, style: 'destructive' },
+                                    { text: 'Cancel', style: 'cancel' },
+                                ]);
+                            }} style={styles.actionButton}>
+                                <Ionicons name="ellipsis-vertical" size={20} color={COLORS.textPrimary} />
+                            </TouchableOpacity>
+                        )
                     )}
                 </View>
 
@@ -158,6 +232,12 @@ export default function ListingDetailScreen() {
                             <Text style={styles.price}>₦{listing.price.toLocaleString()}<Text style={styles.priceUnit}>/yr</Text></Text>
                         )}
                     </View>
+
+                    {!isAvailable && (
+                        <View style={{ backgroundColor: COLORS.accent + '20', padding: 8, borderRadius: 8, marginBottom: 16 }}>
+                            <Text style={{ color: COLORS.accent, fontWeight: 'bold', textAlign: 'center' }}>This listing is currently unavailable (Marked as Taken).</Text>
+                        </View>
+                    )}
 
                     <Text style={styles.title}>{listing.title}</Text>
 

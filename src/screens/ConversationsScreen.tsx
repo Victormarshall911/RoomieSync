@@ -23,7 +23,7 @@ const formatRelativeTime = (dateString: string) => {
 };
 
 export default function ConversationsScreen() {
-    const { user } = useAuth();
+    const { user, blockedUsers } = useAuth();
     const { colors: COLORS } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const navigation = useNavigation();
@@ -65,6 +65,9 @@ export default function ConversationsScreen() {
             const processed = (data || []).map(conv => {
                 const lastMsg = conv.messages && conv.messages.length > 0 ? conv.messages[0] : null;
                 return { ...conv, lastMsg };
+            }).filter(conv => {
+                const otherUserId = conv.user1_id === user?.id ? conv.user2_id : conv.user1_id;
+                return !blockedUsers.includes(otherUserId);
             }).sort((a, b) => {
                 const timeA = a.lastMsg ? new Date(a.lastMsg.created_at).getTime() : 0;
                 const timeB = b.lastMsg ? new Date(b.lastMsg.created_at).getTime() : 0;

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -21,7 +21,7 @@ const getAvatarColor = (name: string) => {
 export default function UserProfileScreen() {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
-    const { user, profile: myProfile } = useAuth();
+    const { user, profile: myProfile, blockUser } = useAuth();
     const { colors: COLORS } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
 
@@ -58,16 +58,69 @@ export default function UserProfileScreen() {
         }
     };
 
+    const handleReport = () => {
+        Alert.alert(
+            'Report User',
+            'Why are you reporting this user?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Inappropriate Content', onPress: () => submitReport('Inappropriate Content') },
+                { text: 'Scam or Spam', onPress: () => submitReport('Scam or Spam') },
+            ]
+        );
+    };
 
+    const submitReport = async (reason: string) => {
+        if (!user || !viewedProfile?.id) return;
+        try {
+            await supabase.from('reports').insert({
+                reporter_id: user.id,
+                reported_user_id: viewedProfile.id,
+                reason,
+            });
+            Alert.alert('Reported', 'Thank you for keeping our community safe.');
+        } catch (e) {
+            Alert.alert('Error', 'Failed to submit report');
+        }
+    };
+
+    const handleBlock = () => {
+        Alert.alert(
+            'Block User',
+            'Are you sure you want to block this user? You will no longer see their listings or messages.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Block', style: 'destructive', onPress: async () => {
+                    try {
+                        if (viewedProfile?.id) await blockUser(viewedProfile.id);
+                        navigation.goBack();
+                    } catch (e) {
+                        Alert.alert('Error', 'Failed to block user');
+                    }
+                }}
+            ]
+        );
+    };
 
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 {/* Header */}
-                <View style={styles.header}>
+                <View style={[styles.header, { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
                     <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
                         <Ionicons name="arrow-back" size={24} color={COLORS.textPrimary} />
                     </TouchableOpacity>
+                    {viewedProfile.id !== user?.id && (
+                        <TouchableOpacity onPress={() => {
+                            Alert.alert('Options', '', [
+                                { text: 'Report User', onPress: handleReport },
+                                { text: 'Block User', onPress: handleBlock, style: 'destructive' },
+                                { text: 'Cancel', style: 'cancel' },
+                            ]);
+                        }} style={styles.backButton}>
+                            <Ionicons name="ellipsis-vertical" size={20} color={COLORS.textPrimary} />
+                        </TouchableOpacity>
+                    )}
                 </View>
 
                 {/* Profile Hero */}

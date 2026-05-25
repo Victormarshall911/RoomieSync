@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
     View, Text, TextInput, FlatList, TouchableOpacity,
-    StyleSheet, KeyboardAvoidingView, Platform, Animated, Linking
+    StyleSheet, KeyboardAvoidingView, Platform, Animated, Linking, Alert
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
@@ -61,7 +61,7 @@ function MessageText({ text, isMine, styles }: { text: string; isMine: boolean; 
 export default function ChatScreen() {
     const route = useRoute();
     const navigation = useNavigation<any>();
-    const { user } = useAuth();
+    const { user, blockedUsers, blockUser } = useAuth();
     const { colors: COLORS, isDark } = useTheme();
     const { refreshUnreadCount } = useMessages();
     const styles = React.useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
@@ -77,6 +77,8 @@ export default function ChatScreen() {
 
     // Track whether user is near the bottom to auto-scroll
     const isNearBottom = useRef(true);
+
+    const isBlocked = blockedUsers.includes(otherProfile?.id);
 
     // Sync state with route params when they change (critical when screen is reused in the stack)
     useEffect(() => {
@@ -112,6 +114,49 @@ export default function ChatScreen() {
         } catch (e) {
             console.error('Error marking as read:', e);
         }
+    };
+
+    const handleReport = () => {
+        Alert.alert(
+            'Report User',
+            'Why are you reporting this user?',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Inappropriate Content', onPress: () => submitReport('Inappropriate Content') },
+                { text: 'Scam or Spam', onPress: () => submitReport('Scam or Spam') },
+            ]
+        );
+    };
+
+    const submitReport = async (reason: string) => {
+        if (!user || !otherProfile?.id) return;
+        try {
+            await supabase.from('reports').insert({
+                reporter_id: user.id,
+                reported_user_id: otherProfile.id,
+                reason,
+            });
+            Alert.alert('Reported', 'Thank you for keeping our community safe.');
+        } catch (e) {
+            Alert.alert('Error', 'Failed to submit report');
+        }
+    };
+
+    const handleBlock = () => {
+        Alert.alert(
+            'Block User',
+            'Are you sure you want to block this user? You will no longer receive their messages.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                { text: 'Block', style: 'destructive', onPress: async () => {
+                    try {
+                        if (otherProfile?.id) await blockUser(otherProfile.id);
+                    } catch (e) {
+                        Alert.alert('Error', 'Failed to block user');
+                    }
+                }}
+            ]
+        );
     };
 
     useEffect(() => {
@@ -335,6 +380,19 @@ export default function ChatScreen() {
                         <Text style={styles.headerMeta} numberOfLines={1}>{otherProfile?.university}</Text>
                     </View>
                 </TouchableOpacity>
+
+                <TouchableOpacity onPress={() => {
+                    const options: any[] = [
+                        { text: 'Report User', onPress: handleReport },
+                        { text: 'Cancel', style: 'cancel' }
+                    ];
+                    if (!isBlocked) {
+                        options.splice(1, 0, { text: 'Block User', onPress: handleBlock, style: 'destructive' });
+                    }
+                    Alert.alert('Options', '', options as any);
+                }} style={styles.backButton}>
+                    <Ionicons name="ellipsis-vertical" size={20} color={COLORS.textPrimary} />
+                </TouchableOpacity>
             </View>
 
             {/* Messages */}
@@ -366,8 +424,15 @@ export default function ChatScreen() {
                 />
 
                 {/* Input */}
-                <View style={styles.inputBar}>
-                    <View style={styles.inputWrapper}>
+                {isBlocked ? (
+                    <View style={[styles.inputBar, { justifyContent: 'center', paddingBottom: Platform.OS === 'ios' ? SPACING.xl : SPACING.md }]}>
+                        <Text style={{ color: COLORS.accent, fontWeight: '600', textAlign: 'center' }}>
+                            You blocked this user.
+                        </Text>
+                    </View>
+                ) : (
+                    <View style={styles.inputBar}>
+                        <View style={styles.inputWrapper}>
                         <TextInput
                             style={styles.input}
                             placeholder="Type a message..."
@@ -395,6 +460,7 @@ export default function ChatScreen() {
                         </TouchableOpacity>
                     </Animated.View>
                 </View>
+                )}
             </KeyboardAvoidingView>
         </View>
     );
