@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import GradientButton from '../components/GradientButton';
-
+// Lifestyle onboarding survey
 const LIFESTYLE_OPTIONS = {
     sleep_habit: {
         label: 'Sleep Schedule',
