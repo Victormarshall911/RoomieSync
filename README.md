@@ -1,120 +1,70 @@
-# RoomieSync 🏠🤝
+# 🤝 RoomieSync — Nigerian University Roommate Finding & Lifestyle Matching Mobile App
 
-**The Smartest Way for Nigerian University Students to Find Perfect Roommates.**
+[![React Native](https://img.shields.io/badge/React_Native-0.81-61DAFB?logo=react&logoColor=black)](https://reactnative.dev/)
+[![Expo](https://img.shields.io/badge/Expo-SDK_54-000020?logo=expo&logoColor=white)](https://expo.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.9-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Supabase](https://img.shields.io/badge/Supabase-Auth_%26_DB-3ECF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 
-RoomieSync is a premium mobile platform designed specifically for the unique student housing landscape in Nigeria. It bridges the gap between students looking for space and those with existing accommodation, using an intelligent compatibility engine based on lifestyle habits.
+**RoomieSync** is an advanced mobile application tailored specifically for Nigerian university students looking for compatible roommates and shared off-campus apartments. By utilizing sophisticated personality and lifestyle compatibility matching algorithms (budget, study habits, cleanliness, sleep schedules), RoomieSync takes the stress and guesswork out of finding reliable flatmates around campuses.
 
 ---
 
 ## ✨ Key Features
 
-### 🔍 Smart Discovery
-- **Lifestyle Matching**: Our proprietary algorithm calculates a match percentage based on sleep habits, cleanliness, social preferences, noise levels, study times, drinking habits, and pet preferences.
-- **Detailed Listings**: View full accommodation details including price, location, and comprehensive lister profiles.
-- **Listing Availability**: Owners can toggle their listings as "Taken" to automatically hide them and keep the discovery feed fresh.
-- **Advanced Filtering**: Filter by university, budget range, and specific lifestyle requirements.
+### 🧩 Lifestyle & Personality-First Compatibility Matching
+- **Match Score Algorithm**: Automatically computes percentage compatibility scores between potential roommates based on daily habits, budget ranges, cleaning schedules, and visitor preferences.
+- **Selectable Nigerian Universities**: Dedicated campus communities for university hubs across Nigeria.
 
-### 💬 Real-time Communication
-- **Instant Chat**: High-performance real-time messaging powered by Supabase.
-- **Push Notifications**: Stay connected with real-time alerts for new messages and matches.
-- **Read Receipts & Unread Indicators**: Keep track of your conversations with unread message badges and dots.
-- **Seamless Flow**: Start a conversation directly from a listing detail page.
+### 💬 Real-Time In-App Messaging & Notifications
+- **Supabase Real-time Chat**: Secure, direct peer-to-peer messaging powered by Supabase real-time channels.
+- **Push Notifications**: Integrated with Expo Notifications for instant match alerts and chat updates.
 
-### 🛡️ Safety & Verification
-- **Student ID Verification**: Automated verification flow for student IDs to ensure a community of genuine students.
-- **Verified Restrictions**: Premium features, like creating a listing, require a verified profile to maintain trust and prevent spam.
-- **Reporting & Blocking**: Built-in moderation tools allow you to report inappropriate content or block abusive users directly from their profiles or chats.
-- **Admin Dashboard**: Specialized interface for administrators to review and approve student verifications.
-
-### 👤 Personalization & Onboarding
-- **Unauthenticated Wizard**: A beautiful, step-by-step onboarding experience to set up your profile, lifestyle survey, and profile photo *before* committing to an account.
-- **Comprehensive University Data**: Searchable, static datasets of major Nigerian universities and courses for accurate data entry.
-- **Flexible Profiles**: Update your department, budget, location preferences, and avatar at any time.
-- **Dark Mode Support**: A premium design system that supports both Light and sleek Dark modes.
+### 🖼️ Rich Profile Customization & Verification
+- **Photo Gallery Uploads**: Integrated with Expo Image Picker for profile verification and apartment showcase pictures.
+- **Student KYC Status**: Student ID verification markers to foster a safe, scam-free student housing network.
 
 ---
 
-## 🛠️ Tech Stack
+## 🛠️ Technology Stack
 
-- **Frontend**: [React Native](https://reactnative.dev/) with [Expo](https://expo.dev/) (SDK 53/54)
-- **Backend**: [Supabase](https://supabase.com/) (Authentication, PostgreSQL, Real-time, Storage)
-- **Styling**: Premium Vanilla CSS/StyleSheet Design System
-- **Icons**: [Ionicons](https://ionic.io/ionicons)
-- **Navigation**: [React Navigation](https://reactnavigation.org/) (Stack & Bottom Tabs)
+- **Mobile Core**: [React Native 0.81](https://reactnative.dev/) + [Expo SDK 54](https://expo.dev/) + [TypeScript](https://www.typescriptlang.org/)
+- **Navigation**: [React Navigation v7](https://reactnavigation.org/) (Stack & Bottom Tabs)
+- **Backend Infrastructure**: [Supabase](https://supabase.com/) (Authentication, PostgreSQL Database, Storage, Real-time Subscriptions)
+- **UI Components & Icons**: Expo Linear Gradient, React Native Element Dropdown, Expo Vector Icons
 
 ---
 
-## 🚀 Getting Started
+## 🚀 Getting Started Locally
 
 ### Prerequisites
-- Node.js (v18+)
-- Expo Go app on your mobile device (or a development build)
-- A Supabase project
+- **Node.js**: v18+
+- **Expo CLI**: Installed via `npm install -g expo-cli`
+- **Expo Go App**: Installed on your physical iOS/Android device (or Android Studio Emulator / iOS Simulator)
 
-### Installation
+### 1. Install Dependencies
+```bash
+cd RoomieSync
+npm install
+```
 
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Victormarshall911/RoomieSync.git
-   cd RoomieSync
-   ```
+### 2. Environment Setup (`.env`)
+Create a `.env` file in the project root:
+```env
+EXPO_PUBLIC_SUPABASE_URL=your_supabase_project_url
+EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
+### 3. Database Schema Setup
+Execute the SQL statements found in `supabase_schema.sql` inside your Supabase project SQL query editor to bootstrap required tables (`profiles`, `matches`, `messages`).
 
-3. **Environment Setup**
-   Create a `.env` file in the root directory (or update `src/lib/supabase.ts` directly for development):
-   ```env
-   EXPO_PUBLIC_SUPABASE_URL=your_supabase_url
-   EXPO_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
-   ```
-
-4. **Start the development server**
-   ```bash
-   npx expo start
-   ```
-   Scan the QR code with your phone to start exploring!
+### 4. Launch Application
+```bash
+npm start
+```
+Scan the QR code displayed in the terminal using the **Expo Go** mobile app or press `a` to run on Android emulator / `i` for iOS simulator.
 
 ---
 
-## 📊 Database Schema
+## 📄 License
 
-The project uses a structured PostgreSQL schema:
-- **`profiles`**: Stores user information, lifestyle preferences, and verification status.
-- **`conversations`**: Tracks unique chat threads between users.
-- **`messages`**: Real-time message storage with sender identification.
-- **`listings`**: (If applicable) Stores accommodation postings with pricing and location.
-
----
-
-## 🎨 Design System
-
-RoomieSync features a custom-built design system defined in `src/utils/theme.ts`:
-- **Typography**: Optimized hierarchy for readability.
-- **Colors**: Curated palettes for Light and Dark modes.
-- **Spacing/Radius**: Standardized tokens for a consistent, premium feel.
-- **Animations**: iOS-style slide-to-go-back and smooth transitions.
-
----
-
-## 📝 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
----
-
-## 🤝 Contributing
-
-We welcome contributions from the community! To contribute to RoomieSync, please follow these steps:
-
-1. **Fork the repository** to your own GitHub account.
-2. **Create a new branch** for your feature or bugfix (`git checkout -b feature/amazing-feature`).
-3. **Commit your changes** with clear and descriptive messages (`git commit -m 'Add amazing feature'`).
-4. **Push to your branch** (`git push origin feature/amazing-feature`).
-5. **Open a Pull Request** against the `main` branch of this repository.
-
-Please ensure your code follows the existing style, includes appropriate TypeScript types, and passes all compilation checks (`npx tsc --noEmit`). If you are adding a major feature, please open an issue first to discuss it.
-
-*Built with ❤️ for Nigerian Students.*
+Proprietary software developed for student housing communities across Nigeria. All rights reserved.
