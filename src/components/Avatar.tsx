@@ -1,8 +1,9 @@
 import React from 'react';
-import { View, Text, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { getAvatarColor } from '../utils/avatarUtils';
+import { useTheme } from '../context/ThemeContext';
 
 const SIZE_MAP = {
     xs: 28,
@@ -20,16 +21,19 @@ interface AvatarProps {
     verified?: boolean;
     /** Custom pixel size — overrides the named size */
     pixelSize?: number;
+    /** Optional press handler — wraps in Pressable when provided */
+    onPress?: () => void;
 }
 
-export default function Avatar({ name, imageUrl, size = 'md', verified, pixelSize }: AvatarProps) {
+export default function Avatar({ name, imageUrl, size = 'md', verified, pixelSize, onPress }: AvatarProps) {
+    const { colors: COLORS } = useTheme();
     const px = pixelSize ?? SIZE_MAP[size];
     const radius = px / 2;
     const fontSize = Math.max(px * 0.4, 11);
     const initial = (name || '?').charAt(0).toUpperCase();
     const bgColor = getAvatarColor(name);
 
-    return (
+    const content = (
         <View style={[styles.wrapper, { width: px, height: px }]}>
             {imageUrl ? (
                 <Image
@@ -48,12 +52,22 @@ export default function Avatar({ name, imageUrl, size = 'md', verified, pixelSiz
                 </View>
             )}
             {verified && (
-                <View style={[styles.verifiedBadge, { right: -1, bottom: -1 }]}>
-                    <Ionicons name="checkmark-circle" size={Math.max(px * 0.32, 14)} color="#10B981" />
+                <View style={[styles.verifiedBadge, { right: -1, bottom: -1, backgroundColor: COLORS.bgAlt }]}>
+                    <Ionicons name="checkmark-circle" size={Math.max(px * 0.32, 14)} color={COLORS.trust} />
                 </View>
             )}
         </View>
     );
+
+    if (onPress) {
+        return (
+            <Pressable onPress={onPress} style={({ pressed }) => ({ opacity: pressed ? 0.7 : 1 })}>
+                {content}
+            </Pressable>
+        );
+    }
+
+    return content;
 }
 
 const styles = StyleSheet.create({
@@ -74,7 +88,6 @@ const styles = StyleSheet.create({
     },
     verifiedBadge: {
         position: 'absolute',
-        backgroundColor: '#0F0F1A',
         borderRadius: 999,
         padding: 1,
     },
