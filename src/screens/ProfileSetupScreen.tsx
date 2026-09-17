@@ -12,16 +12,23 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import GradientButton from '../components/GradientButton';
+import ProgressBar from '../components/ProgressBar';
+
+type GenderOption = 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
+
+const GENDER_OPTIONS: GenderOption[] = ['Male', 'Female', 'Non-binary', 'Prefer not to say'];
 
 export default function ProfileSetupScreen() {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const { colors: COLORS, isDark } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+
     const [fullName, setFullName] = useState('');
     const [university, setUniversity] = useState('');
     const [department, setDepartment] = useState('');
-    const [gender, setGender] = useState<'Male' | 'Female' | null>(null);
+    const [gender, setGender] = useState<GenderOption | null>(null);
     const [localAvatarUri, setLocalAvatarUri] = useState<string>('');
+    const [errors, setErrors] = useState<Record<string, string>>({});
 
     const pickImage = async () => {
         try {
@@ -41,28 +48,46 @@ export default function ProfileSetupScreen() {
     };
 
     const handleNext = () => {
-        if (!fullName || !university || !department || !gender) {
-            Alert.alert('Error', 'Please fill in all fields');
+        const newErrors: Record<string, string> = {};
+        if (!fullName.trim()) newErrors.fullName = 'Full name is required';
+        if (!university) newErrors.university = 'Please select your university';
+        if (!department) newErrors.department = 'Please select your department / course';
+        if (!gender) newErrors.gender = 'Please select your gender';
+
+        if (Object.keys(newErrors).length > 0) {
+            setErrors(newErrors);
             return;
         }
+
+        setErrors({});
         navigation.navigate('Preferences', {
-            profileData: { fullName, university, department, gender, localAvatarUri }
+            profileData: {
+                fullName: fullName.trim(),
+                university,
+                department,
+                gender: gender!,
+                localAvatarUri
+            }
         });
+    };
+
+    const clearError = (field: string) => {
+        if (errors[field]) {
+            setErrors(prev => {
+                const updated = { ...prev };
+                delete updated[field];
+                return updated;
+            });
+        }
     };
 
     return (
         <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
-                {/* Progress */}
-                <View style={styles.progressRow}>
-                    <View style={[styles.progressDot, styles.progressActive]} />
-                    <View style={styles.progressLine} />
-                    <View style={styles.progressDot} />
-                    <View style={styles.progressLine} />
-                    <View style={styles.progressDot} />
-                </View>
+                {/* Progress Bar (Step 1 of 5) */}
+                <ProgressBar currentStep={1} totalSteps={5} />
 
-                <Text style={styles.stepLabel}>Step 1 of 3</Text>
+                <Text style={styles.stepLabel}>Step 1 of 5</Text>
                 <Text style={styles.title}>Basic Info</Text>
                 <Text style={styles.subtitle}>Tell us a bit about yourself</Text>
 
@@ -81,62 +106,113 @@ export default function ProfileSetupScreen() {
                 </View>
 
                 <View style={styles.card}>
-                    <InputField COLORS={COLORS} styles={styles} label="Full Name" placeholder="e.g. Victor Adebayo" value={fullName} onChangeText={setFullName} />
-
-                    <Text style={styles.inputLabel}>University</Text>
-                    <Dropdown
-                        style={[styles.dropdown, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border }]}
-                        placeholderStyle={[styles.placeholderStyle, { color: COLORS.textMuted }]}
-                        selectedTextStyle={[styles.selectedTextStyle, { color: COLORS.textPrimary }]}
-                        inputSearchStyle={[styles.inputSearchStyle, { color: COLORS.textPrimary, borderColor: COLORS.border }]}
-                        containerStyle={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
-                        itemTextStyle={{ color: COLORS.textPrimary }}
-                        activeColor={COLORS.primaryFaded}
-                        data={NIGERIAN_UNIVERSITIES}
-                        search
-                        maxHeight={300}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select University"
-                        searchPlaceholder="Search..."
-                        value={university}
-                        onChange={item => setUniversity(item.value)}
+                    <InputField
+                        COLORS={COLORS}
+                        styles={styles}
+                        label="Full Name"
+                        placeholder="e.g. Victor Adebayo"
+                        value={fullName}
+                        onChangeText={(text: string) => {
+                            setFullName(text);
+                            clearError('fullName');
+                        }}
+                        error={errors.fullName}
                     />
 
-                    <Text style={[styles.inputLabel, { marginTop: SPACING.md }]}>Department / Course</Text>
-                    <Dropdown
-                        style={[styles.dropdown, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border }]}
-                        placeholderStyle={[styles.placeholderStyle, { color: COLORS.textMuted }]}
-                        selectedTextStyle={[styles.selectedTextStyle, { color: COLORS.textPrimary }]}
-                        inputSearchStyle={[styles.inputSearchStyle, { color: COLORS.textPrimary, borderColor: COLORS.border }]}
-                        containerStyle={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
-                        itemTextStyle={{ color: COLORS.textPrimary }}
-                        activeColor={COLORS.primaryFaded}
-                        data={NIGERIAN_COURSES}
-                        search
-                        maxHeight={300}
-                        labelField="label"
-                        valueField="value"
-                        placeholder="Select Department"
-                        searchPlaceholder="Search..."
-                        value={department}
-                        onChange={item => setDepartment(item.value)}
-                    />
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>University</Text>
+                        <Dropdown
+                            style={[
+                                styles.dropdown,
+                                {
+                                    backgroundColor: COLORS.bgInput,
+                                    borderColor: errors.university ? COLORS.danger : COLORS.border,
+                                }
+                            ]}
+                            placeholderStyle={[styles.placeholderStyle, { color: COLORS.textMuted }]}
+                            selectedTextStyle={[styles.selectedTextStyle, { color: COLORS.textPrimary }]}
+                            inputSearchStyle={[styles.inputSearchStyle, { color: COLORS.textPrimary, borderColor: COLORS.border }]}
+                            containerStyle={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+                            itemTextStyle={{ color: COLORS.textPrimary }}
+                            activeColor={COLORS.primaryFaded}
+                            data={NIGERIAN_UNIVERSITIES}
+                            search
+                            maxHeight={300}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select University"
+                            searchPlaceholder="Search..."
+                            value={university}
+                            onChange={item => {
+                                setUniversity(item.value);
+                                clearError('university');
+                            }}
+                        />
+                        {errors.university ? (
+                            <Text style={[styles.errorText, { color: COLORS.danger }]}>{errors.university}</Text>
+                        ) : null}
+                    </View>
 
-                    <Text style={[styles.inputLabel, { marginTop: SPACING.md }]}>Gender</Text>
-                    <View style={styles.genderContainer}>
-                        {['Male', 'Female'].map((g) => (
-                            <TouchableOpacity
-                                key={g}
-                                style={[styles.genderButton, gender === g && styles.genderButtonActive]}
-                                onPress={() => setGender(g as 'Male' | 'Female')}
-                                activeOpacity={0.7}
-                            >
-                                <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>
-                                    {g}
-                                </Text>
-                            </TouchableOpacity>
-                        ))}
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Department / Course</Text>
+                        <Dropdown
+                            style={[
+                                styles.dropdown,
+                                {
+                                    backgroundColor: COLORS.bgInput,
+                                    borderColor: errors.department ? COLORS.danger : COLORS.border,
+                                }
+                            ]}
+                            placeholderStyle={[styles.placeholderStyle, { color: COLORS.textMuted }]}
+                            selectedTextStyle={[styles.selectedTextStyle, { color: COLORS.textPrimary }]}
+                            inputSearchStyle={[styles.inputSearchStyle, { color: COLORS.textPrimary, borderColor: COLORS.border }]}
+                            containerStyle={{ backgroundColor: COLORS.bgCard, borderColor: COLORS.border }}
+                            itemTextStyle={{ color: COLORS.textPrimary }}
+                            activeColor={COLORS.primaryFaded}
+                            data={NIGERIAN_COURSES}
+                            search
+                            maxHeight={300}
+                            labelField="label"
+                            valueField="value"
+                            placeholder="Select Department"
+                            searchPlaceholder="Search..."
+                            value={department}
+                            onChange={item => {
+                                setDepartment(item.value);
+                                clearError('department');
+                            }}
+                        />
+                        {errors.department ? (
+                            <Text style={[styles.errorText, { color: COLORS.danger }]}>{errors.department}</Text>
+                        ) : null}
+                    </View>
+
+                    <View style={styles.inputGroup}>
+                        <Text style={styles.inputLabel}>Gender</Text>
+                        <View style={styles.genderContainer}>
+                            {GENDER_OPTIONS.map((g) => (
+                                <TouchableOpacity
+                                    key={g}
+                                    style={[
+                                        styles.genderButton,
+                                        gender === g && styles.genderButtonActive,
+                                        errors.gender && !gender && { borderColor: COLORS.danger }
+                                    ]}
+                                    onPress={() => {
+                                        setGender(g);
+                                        clearError('gender');
+                                    }}
+                                    activeOpacity={0.7}
+                                >
+                                    <Text style={[styles.genderText, gender === g && styles.genderTextActive]}>
+                                        {g}
+                                    </Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        {errors.gender ? (
+                            <Text style={[styles.errorText, { color: COLORS.danger }]}>{errors.gender}</Text>
+                        ) : null}
                     </View>
                 </View>
 
@@ -158,10 +234,10 @@ export default function ProfileSetupScreen() {
     );
 }
 
-const InputField = ({ label, placeholder, value, onChangeText, keyboardType, COLORS, styles }: any) => (
+const InputField = ({ label, placeholder, value, onChangeText, keyboardType, COLORS, styles, error }: any) => (
     <View style={styles.inputGroup}>
         <Text style={styles.inputLabel}>{label}</Text>
-        <View style={styles.inputWrapper}>
+        <View style={[styles.inputWrapper, error && { borderColor: COLORS.danger }]}>
             <TextInput
                 style={styles.input}
                 placeholder={placeholder}
@@ -171,6 +247,9 @@ const InputField = ({ label, placeholder, value, onChangeText, keyboardType, COL
                 keyboardType={keyboardType}
             />
         </View>
+        {error ? (
+            <Text style={[styles.errorText, { color: COLORS.danger }]}>{error}</Text>
+        ) : null}
     </View>
 );
 
@@ -180,12 +259,6 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         backgroundColor: COLORS.bg,
     },
     content: { padding: SPACING.lg, paddingTop: 60 },
-    progressRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: SPACING.lg,
-    },
     avatarSection: {
         alignItems: 'center',
         marginBottom: SPACING.lg,
@@ -214,29 +287,12 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.small,
         color: COLORS.textMuted,
     },
-    progressDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: COLORS.bgInput,
-        borderWidth: 2,
-        borderColor: COLORS.border,
-    },
-    progressActive: {
-        backgroundColor: COLORS.primary,
-        borderColor: COLORS.primary,
-    },
-    progressLine: {
-        width: 40,
-        height: 2,
-        backgroundColor: COLORS.border,
-        marginHorizontal: SPACING.xs,
-    },
     stepLabel: {
         ...FONTS.small,
         color: COLORS.textMuted,
         textAlign: 'center',
         marginBottom: SPACING.xs,
+        marginTop: SPACING.sm,
     },
     title: {
         ...FONTS.h1,
@@ -274,17 +330,25 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.body,
         color: COLORS.textPrimary,
     },
+    errorText: {
+        ...FONTS.caption,
+        marginTop: 4,
+        fontSize: 12,
+    },
     genderContainer: {
         flexDirection: 'row',
-        gap: SPACING.md,
+        flexWrap: 'wrap',
+        gap: SPACING.sm,
     },
     genderButton: {
-        flex: 1,
-        padding: SPACING.md,
+        width: '48%',
+        paddingVertical: SPACING.md,
+        paddingHorizontal: SPACING.xs,
         borderRadius: RADIUS.md,
         borderWidth: 1,
         borderColor: COLORS.border,
         alignItems: 'center',
+        justifyContent: 'center',
         backgroundColor: COLORS.bgInput,
     },
     genderButtonActive: {
@@ -294,21 +358,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     genderText: {
         ...FONTS.bodyBold,
         color: COLORS.textSecondary,
+        fontSize: 13,
+        textAlign: 'center',
     },
     genderTextActive: {
         color: COLORS.primaryLight,
-    },
-    nextButton: {
-        backgroundColor: COLORS.primary,
-        padding: SPACING.md,
-        borderRadius: RADIUS.md,
-        alignItems: 'center',
-        marginBottom: SPACING.xxl,
-    },
-    nextButtonText: {
-        color: '#FFFFFF',
-        ...FONTS.bodyBold,
-        fontSize: 16,
     },
     dropdown: {
         height: 50,

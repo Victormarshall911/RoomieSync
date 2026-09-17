@@ -38,7 +38,7 @@ export type ProfileSetupData = {
     fullName: string;
     university: string;
     department: string;
-    gender: 'Male' | 'Female';
+    gender: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say';
     localAvatarUri?: string;
 };
 

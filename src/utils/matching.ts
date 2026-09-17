@@ -3,7 +3,7 @@ export interface Profile {
     full_name: string;
     university: string;
     department: string;
-    gender: 'Male' | 'Female';
+    gender: 'Male' | 'Female' | 'Non-binary' | 'Prefer not to say' | string;
     budget_min: number;
     budget_max: number;
     location_preference: string;
