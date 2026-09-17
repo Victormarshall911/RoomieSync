@@ -18,21 +18,21 @@ const SLIDES = [
         title: 'Find Your Perfect Match',
         description: 'Discover roommates who share your lifestyle, habits, and preferences for a harmonious living experience.',
         icon: 'people-outline' as const,
-        colors: ['rgba(108, 58, 237, 0.8)', 'rgba(108, 58, 237, 0.4)'] as const,
+        colors: ['rgba(245, 169, 77, 0.8)', 'rgba(245, 169, 77, 0.3)'] as const,
     },
     {
         id: '2',
         title: 'Safe & Verified Students',
         description: 'Connect with confidence. Every user is verified using their university credentials.',
         icon: 'shield-checkmark-outline' as const,
-        colors: ['rgba(56, 189, 248, 0.8)', 'rgba(56, 189, 248, 0.4)'] as const,
+        colors: ['rgba(52, 215, 166, 0.8)', 'rgba(52, 215, 166, 0.3)'] as const,
     },
     {
         id: '3',
         title: 'Chat & Connect Easily',
         description: 'Message potential roommates directly in the app and easily secure your next home.',
         icon: 'chatbubbles-outline' as const,
-        colors: ['rgba(236, 72, 153, 0.8)', 'rgba(236, 72, 153, 0.4)'] as const,
+        colors: ['rgba(245, 169, 77, 0.6)', 'rgba(52, 215, 166, 0.4)'] as const,
     }
 ];
 
@@ -120,18 +120,20 @@ export default function OnboardingScreen({ navigation }: Props) {
         <View style={[styles.container, { backgroundColor: COLORS.bg }]}>
             <LinearGradient
                 colors={isDark 
-                    ? ['rgba(108, 58, 237, 0.1)', 'transparent'] 
-                    : ['rgba(108, 58, 237, 0.05)', 'transparent']
+                    ? ['rgba(245, 169, 77, 0.08)', 'transparent'] 
+                    : ['rgba(245, 169, 77, 0.04)', 'transparent']
                 }
                 style={StyleSheet.absoluteFill}
             />
             
             <View style={styles.skipContainer}>
-                <TouchableOpacity onPress={completeOnboarding}>
-                    <Text style={[styles.skipText, { color: COLORS.textSecondary }]}>
-                        {currentIndex < SLIDES.length - 1 ? 'Skip' : ''}
-                    </Text>
-                </TouchableOpacity>
+                {currentIndex < SLIDES.length - 1 && (
+                    <TouchableOpacity onPress={completeOnboarding} hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+                        <Text style={[styles.skipText, { color: COLORS.textSecondary }]}>
+                            Skip
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </View>
 
             <View style={{ flex: 3 }}>
@@ -174,7 +176,7 @@ export default function OnboardingScreen({ navigation }: Props) {
                         <Ionicons 
                             name="arrow-forward" 
                             size={20} 
-                            color="#FFFFFF" 
+                            color="#1A1204" 
                             style={styles.buttonIcon} 
                         />
                     </LinearGradient>
@@ -214,7 +216,7 @@ const styles = StyleSheet.create({
         borderRadius: 80,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#6C3AED',
+        shadowColor: '#F5A94D',
         shadowOffset: { width: 0, height: 10 },
         shadowOpacity: 0.3,
         shadowRadius: 20,
@@ -256,7 +258,7 @@ const styles = StyleSheet.create({
     button: {
         borderRadius: RADIUS.lg,
         overflow: 'hidden',
-        shadowColor: '#6C3AED',
+        shadowColor: '#F5A94D',
         shadowOffset: { width: 0, height: 4 },
         shadowOpacity: 0.3,
         shadowRadius: 8,
@@ -271,7 +273,7 @@ const styles = StyleSheet.create({
     },
     buttonText: {
         ...FONTS.bodyBold,
-        color: '#FFFFFF',
+        color: '#1A1204',
         fontSize: 18,
     },
     buttonIcon: {
