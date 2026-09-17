@@ -6,8 +6,9 @@ import { MessageProvider } from './src/context/MessageContext';
 import AppNavigator from './src/navigation/AppNavigator';
 import { StatusBar } from 'expo-status-bar';
 import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { useAppFonts } from './src/utils/fonts';
 import 'react-native-gesture-handler';
-import { LogBox } from 'react-native';
+import { LogBox, View, ActivityIndicator, StyleSheet } from 'react-native';
 
 // Suppress known Expo Go notification warnings on launch
 LogBox.ignoreLogs([
@@ -28,12 +29,37 @@ function AppContent() {
     );
 }
 
+function AppWithFonts() {
+    const fontsLoaded = useAppFonts();
+
+    if (!fontsLoaded) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#F5A94D" />
+            </View>
+        );
+    }
+
+    return (
+        <ThemeProvider>
+            <AppContent />
+        </ThemeProvider>
+    );
+}
+
 export default function App() {
     return (
         <ErrorBoundary>
-            <ThemeProvider>
-                <AppContent />
-            </ThemeProvider>
+            <AppWithFonts />
         </ErrorBoundary>
     );
 }
+
+const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        backgroundColor: '#121218',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+});

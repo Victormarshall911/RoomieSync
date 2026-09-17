@@ -1,14 +1,19 @@
+import { FontFamily } from './fonts';
+
 export type ThemeColors = {
     primary: string;
     primaryLight: string;
     primaryDark: string;
     primaryFaded: string;
     accent: string;
-    accentLight: string;
-    success: string;
-    successLight: string;
+    accentDim: string;
+    trust: string;
+    trustDim: string;
+    danger: string;
     bg: string;
+    bgAlt: string;
     bgCard: string;
+    bgCard2: string;
     bgCardLight: string;
     bgInput: string;
     white: string;
@@ -21,56 +26,94 @@ export type ThemeColors = {
     gradientAccent: [string, string];
     gradientDark: [string, string];
     gradientCard: [string, string];
+    // Legacy aliases — keep for backward compatibility
+    success: string;
+    successLight: string;
+    accentLight: string;
 };
 
 export const DARK_COLORS: ThemeColors = {
-    primary: '#6C3AED',
-    primaryLight: '#8B5CF6',
-    primaryDark: '#5B21B6',
-    primaryFaded: 'rgba(108, 58, 237, 0.08)',
-    accent: '#F97316',
-    accentLight: '#FB923C',
-    success: '#10B981',
-    successLight: '#D1FAE5',
-    bg: '#0F0F1A',
-    bgCard: '#1A1A2E',
-    bgCardLight: '#252540',
+    // Brand
+    primary: '#F5A94D',
+    primaryLight: '#F5A94D',
+    primaryDark: '#E8863A',
+    primaryFaded: 'rgba(245, 169, 77, 0.08)',
+    accent: '#F5A94D',
+    accentDim: '#3A2C18',
+    accentLight: '#F5A94D',
+    trust: '#34D7A6',
+    trustDim: '#123329',
+    danger: '#F16565',
+
+    // Surfaces
+    bg: '#121218',
+    bgAlt: '#1A1A24',
+    bgCard: '#1E1E29',
+    bgCard2: '#242432',
+    bgCardLight: '#242432',
     bgInput: 'rgba(255,255,255,0.06)',
     white: '#FFFFFF',
-    textPrimary: '#F8FAFC',
-    textSecondary: '#94A3B8',
-    textMuted: '#64748B',
+
+    // Text
+    textPrimary: '#F5F3EF',
+    textSecondary: '#9797A8',
+    textMuted: '#9797A8',
+
+    // Borders
     border: 'rgba(255,255,255,0.08)',
     borderLight: 'rgba(255,255,255,0.12)',
-    gradientPrimary: ['#6C3AED', '#4F46E5'] as const,
-    gradientAccent: ['#F97316', '#EF4444'] as const,
-    gradientDark: ['#0F0F1A', '#1A1A2E'] as const,
-    gradientCard: ['rgba(108,58,237,0.15)', 'rgba(79,70,229,0.05)'] as const,
+
+    // Gradients
+    gradientPrimary: ['#F5A94D', '#E8863A'] as const,
+    gradientAccent: ['#F5A94D', '#E8863A'] as const,
+    gradientDark: ['#121218', '#1A1A24'] as const,
+    gradientCard: ['rgba(245,169,77,0.12)', 'rgba(232,134,58,0.04)'] as const,
+
+    // Legacy aliases
+    success: '#34D7A6',
+    successLight: '#123329',
 };
 
 export const LIGHT_COLORS: ThemeColors = {
-    primary: '#6C3AED',
-    primaryLight: '#8B5CF6',
-    primaryDark: '#4F46E5',
-    primaryFaded: 'rgba(108, 58, 237, 0.05)',
-    accent: '#F97316',
-    accentLight: '#FB923C',
-    success: '#059669',
-    successLight: '#ECFDF5',
-    bg: '#F8FAFC',
+    // Brand
+    primary: '#F5A94D',
+    primaryLight: '#F5A94D',
+    primaryDark: '#E8863A',
+    primaryFaded: 'rgba(245, 169, 77, 0.06)',
+    accent: '#F5A94D',
+    accentDim: '#FDEACB',
+    accentLight: '#F5A94D',
+    trust: '#34D7A6',
+    trustDim: '#DCF7EE',
+    danger: '#F16565',
+
+    // Surfaces
+    bg: '#FAF8F5',
+    bgAlt: '#F1EFE9',
     bgCard: '#FFFFFF',
-    bgCardLight: '#F1F5F9',
-    bgInput: 'rgba(15, 15, 26, 0.04)',
-    white: '#0F0F1A',
-    textPrimary: '#0F172A',
-    textSecondary: '#475569',
-    textMuted: '#94A3B8',
-    border: 'rgba(15, 23, 42, 0.08)',
-    borderLight: 'rgba(15, 23, 42, 0.12)',
-    gradientPrimary: ['#6C3AED', '#4F46E5'] as const,
-    gradientAccent: ['#F97316', '#EF4444'] as const,
-    gradientDark: ['#F8FAFC', '#E2E8F0'] as const,
-    gradientCard: ['rgba(108,58,237,0.08)', 'rgba(79,70,229,0.03)'] as const,
+    bgCard2: '#F6F4EF',
+    bgCardLight: '#F6F4EF',
+    bgInput: 'rgba(0,0,0,0.04)',
+    white: '#17171F',
+
+    // Text
+    textPrimary: '#17171F',
+    textSecondary: '#726F66',
+    textMuted: '#726F66',
+
+    // Borders
+    border: 'rgba(0,0,0,0.08)',
+    borderLight: 'rgba(0,0,0,0.12)',
+
+    // Gradients
+    gradientPrimary: ['#F5A94D', '#E8863A'] as const,
+    gradientAccent: ['#F5A94D', '#E8863A'] as const,
+    gradientDark: ['#FAF8F5', '#F1EFE9'] as const,
+    gradientCard: ['rgba(245,169,77,0.06)', 'rgba(232,134,58,0.02)'] as const,
+
+    // Legacy aliases
+    success: '#34D7A6',
+    successLight: '#DCF7EE',
 };
 
 // Default export for backward compatibility during transition
@@ -95,13 +138,13 @@ export const RADIUS = {
 };
 
 export const FONTS = {
-    h1: { fontSize: 28, fontWeight: '700' as const },
-    h2: { fontSize: 22, fontWeight: '600' as const },
-    h3: { fontSize: 18, fontWeight: '600' as const },
-    body: { fontSize: 16, fontWeight: '400' as const },
-    bodyBold: { fontSize: 16, fontWeight: '600' as const },
-    caption: { fontSize: 14, fontWeight: '400' as const },
-    small: { fontSize: 11, fontWeight: '500' as const, letterSpacing: 0.3 },
+    h1: { fontSize: 28, fontWeight: '700' as const, fontFamily: FontFamily.soraBold },
+    h2: { fontSize: 22, fontWeight: '600' as const, fontFamily: FontFamily.soraSemiBold },
+    h3: { fontSize: 18, fontWeight: '600' as const, fontFamily: FontFamily.soraSemiBold },
+    body: { fontSize: 16, fontWeight: '400' as const, fontFamily: FontFamily.interRegular },
+    bodyBold: { fontSize: 16, fontWeight: '600' as const, fontFamily: FontFamily.interSemiBold },
+    caption: { fontSize: 14, fontWeight: '400' as const, fontFamily: FontFamily.interRegular },
+    small: { fontSize: 11, fontWeight: '500' as const, letterSpacing: 0.3, fontFamily: FontFamily.interMedium },
 };
 
 export const SHADOWS = {
