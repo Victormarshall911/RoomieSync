@@ -68,11 +68,15 @@ export default function GradientButton({
                     style={[styles.gradient, isDisabled && styles.disabled]}
                 >
                     {loading ? (
-                        <ActivityIndicator color="#FFFFFF" />
+                        <ActivityIndicator color={variant === 'primary' ? '#1A1204' : '#FFFFFF'} />
                     ) : (
                         <>
                             {icon && <>{icon}</>}
-                            <Text style={[styles.text, isDisabled && { color: COLORS.textMuted }]}>
+                            <Text style={[
+                                styles.text,
+                                variant === 'primary' && styles.textPrimary,
+                                isDisabled && { color: COLORS.textMuted },
+                            ]}>
                                 {title}
                             </Text>
                         </>
@@ -101,5 +105,8 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         ...FONTS.bodyBold,
         fontSize: 16,
+    },
+    textPrimary: {
+        color: '#1A1204',
     },
 });
