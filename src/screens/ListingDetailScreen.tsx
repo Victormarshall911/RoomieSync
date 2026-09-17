@@ -1,14 +1,29 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    TouchableOpacity,
+    StyleSheet,
+    ScrollView,
+    Alert,
+    Dimensions,
+    FlatList,
+    NativeSyntheticEvent,
+    NativeScrollEvent,
+} from 'react-native';
+import { Image } from 'expo-image';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { calculateMatchPercentage, Profile } from '../utils/matching';
-import { getAvatarColor, getMatchColor, getMatchLabel } from '../utils/avatarUtils';
+import { getMatchColor, getMatchLabel } from '../utils/avatarUtils';
 import Avatar from '../components/Avatar';
+import GradientButton from '../components/GradientButton';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
+
+const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function ListingDetailScreen() {
     const navigation = useNavigation<any>();
@@ -21,6 +36,9 @@ export default function ListingDetailScreen() {
     const lister: Profile | undefined = listing.profiles;
     const creatorName = lister?.full_name || listing.creator_name_demo || 'User';
     const [isAvailable, setIsAvailable] = useState(listing.is_available !== false);
+    const [activeImageIndex, setActiveImageIndex] = useState(0);
+
+    const images: string[] = listing.images || [];
 
     const matchPct = (myProfile && lister) ? calculateMatchPercentage(myProfile as Profile, lister) : 0;
     const matchColor = getMatchColor(matchPct, COLORS);
@@ -29,7 +47,6 @@ export default function ListingDetailScreen() {
     const handleChat = async () => {
         if (!user || !lister?.id) return;
         try {
-            // Fetch conversations and filter locally to 100% avoid PGRST116 (multiple rows) errors
             const { data: convos, error } = await supabase
                 .from('conversations')
                 .select('id, user1_id, user2_id')
@@ -37,7 +54,6 @@ export default function ListingDetailScreen() {
 
             if (error) throw error;
 
-            // Find the specific conversation with the lister
             const existingConvo = convos?.find(c => 
                 (c.user1_id === user.id && c.user2_id === lister.id) ||
                 (c.user1_id === lister.id && c.user2_id === user.id)
@@ -50,7 +66,6 @@ export default function ListingDetailScreen() {
             }
         } catch (err) {
             console.error('Chat navigation error:', err);
-            // Fallback: try navigating without a conversationId to let ChatScreen handle it
             navigation.navigate('Chat', { conversationId: null, otherUser: lister });
         }
     };
@@ -116,7 +131,12 @@ export default function ListingDetailScreen() {
         );
     };
 
-    // Match breakdown items
+    const onScrollGallery = (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+        const offsetX = e.nativeEvent.contentOffset.x;
+        const index = Math.round(offsetX / SCREEN_WIDTH);
+        setActiveImageIndex(index);
+    };
+
     const matchBreakdown = lister && myProfile ? [
         {
             label: 'Sleep',
@@ -126,7 +146,7 @@ export default function ListingDetailScreen() {
         },
         {
             label: 'Cleanliness',
-            match: Math.abs((myProfile.cleanliness || 0) - (lister.cleanliness || 0)) <= 2,
+            match: Math.abs((myProfile.cleanliness || 0) - (lister.cleanliness || 0)) <= 3,
             yours: myProfile.cleanliness ? `Level ${myProfile.cleanliness}` : 'Not set',
             theirs: lister.cleanliness ? `Level ${lister.cleanliness}` : 'Not set',
         },
@@ -144,10 +164,16 @@ export default function ListingDetailScreen() {
         },
     ] : [];
 
+    const getMatchInsight = () => {
+        if (matchPct >= 80) return 'High compatibility! You share key lifestyle and budget preferences.';
+        if (matchPct >= 50) return 'Moderate match. Review lifestyle details below to check alignment.';
+        return 'Different habits. Check compatibility breakdown to see if it suits you.';
+    };
+
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-                {/* Header */}
+                {/* Header Navigation */}
                 <View style={styles.header}>
                     <View style={styles.headerLeft}>
                         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -159,9 +185,9 @@ export default function ListingDetailScreen() {
                         <View style={styles.ownerActions}>
                             <TouchableOpacity 
                                 onPress={toggleAvailability} 
-                                style={[styles.actionButton, { backgroundColor: isAvailable ? COLORS.bgCard : COLORS.success }]}
+                                style={[styles.actionButton, { backgroundColor: isAvailable ? COLORS.bgCard : COLORS.trust }]}
                             >
-                                <Ionicons name={isAvailable ? "eye-outline" : "eye-off-outline"} size={22} color={isAvailable ? COLORS.primaryLight : '#fff'} />
+                                <Ionicons name={isAvailable ? "eye-outline" : "eye-off-outline"} size={22} color={isAvailable ? COLORS.primaryLight : '#1A1204'} />
                             </TouchableOpacity>
                             <TouchableOpacity 
                                 onPress={() => navigation.navigate('EditListing', { listing })} 
@@ -196,7 +222,7 @@ export default function ListingDetailScreen() {
                                 }} 
                                 style={styles.actionButton}
                             >
-                                <Ionicons name="trash-outline" size={22} color={COLORS.accent} />
+                                <Ionicons name="trash-outline" size={22} color={COLORS.danger} />
                             </TouchableOpacity>
                         </View>
                     ) : (
@@ -213,6 +239,62 @@ export default function ListingDetailScreen() {
                         )
                     )}
                 </View>
+
+                {/* Photo Gallery with Paging Dots */}
+                {images.length > 0 ? (
+                    <View style={styles.galleryContainer}>
+                        <FlatList
+                            data={images}
+                            horizontal
+                            pagingEnabled
+                            showsHorizontalScrollIndicator={false}
+                            keyExtractor={(_, i) => String(i)}
+                            onMomentumScrollEnd={onScrollGallery}
+                            renderItem={({ item }) => (
+                                <Image
+                                    source={{ uri: item }}
+                                    style={styles.galleryImage}
+                                    contentFit="cover"
+                                />
+                            )}
+                        />
+                        {images.length > 1 && (
+                            <View style={styles.dotsContainer}>
+                                {images.map((_, i) => (
+                                    <View
+                                        key={i}
+                                        style={[
+                                            styles.dot,
+                                            activeImageIndex === i ? styles.activeDot : null,
+                                        ]}
+                                    />
+                                ))}
+                            </View>
+                        )}
+                    </View>
+                ) : (
+                    <View style={[styles.placeholderBanner, { backgroundColor: COLORS.bgCard2 }]}>
+                        <Ionicons
+                            name={listing.searching_for === 'Listing a Space' ? "home-outline" : "people-outline"}
+                            size={48}
+                            color={COLORS.textMuted}
+                        />
+                    </View>
+                )}
+
+                {/* Match Strip (Compatibility highlight) */}
+                {lister && myProfile && lister.id !== user?.id ? (
+                    <View style={styles.matchStrip}>
+                        <View style={[styles.matchStripRing, { borderColor: matchColor }]}>
+                            <Text style={[styles.matchStripPct, { color: matchColor }]}>{matchPct}%</Text>
+                            <Text style={[styles.matchStripLabel, { color: matchColor }]}>MATCH</Text>
+                        </View>
+                        <View style={styles.matchStripTextWrap}>
+                            <Text style={styles.matchStripTitle}>{matchLabel}</Text>
+                            <Text style={styles.matchStripSubtitle}>{getMatchInsight()}</Text>
+                        </View>
+                    </View>
+                ) : null}
 
                 {/* Title Card */}
                 <View style={styles.card}>
@@ -234,8 +316,8 @@ export default function ListingDetailScreen() {
                     </View>
 
                     {!isAvailable && (
-                        <View style={{ backgroundColor: COLORS.accent + '20', padding: 8, borderRadius: 8, marginBottom: 16 }}>
-                            <Text style={{ color: COLORS.accent, fontWeight: 'bold', textAlign: 'center' }}>This listing is currently unavailable (Marked as Taken).</Text>
+                        <View style={styles.unavailableBanner}>
+                            <Text style={styles.unavailableText}>This listing is currently marked as Taken.</Text>
                         </View>
                     )}
 
@@ -268,7 +350,7 @@ export default function ListingDetailScreen() {
                             verified={lister?.is_verified}
                         />
                         <View style={styles.listerInfo}>
-                                <Text style={styles.listerName}>{creatorName}</Text>
+                            <Text style={styles.listerName}>{creatorName}</Text>
                             <Text style={styles.listerMeta}>
                                 {lister?.university || 'University not set'}
                                 {lister?.department ? ` · ${lister.department}` : ''}
@@ -282,9 +364,9 @@ export default function ListingDetailScreen() {
                 {matchBreakdown.length > 0 && (
                     <View style={styles.card}>
                         <View style={styles.matchHeader}>
-                            <Text style={styles.sectionLabel}>Compatibility</Text>
+                            <Text style={styles.sectionLabel}>Compatibility Breakdown</Text>
                             <View style={styles.matchBadge}>
-                            <Text style={[styles.matchPctText, { color: matchColor }]}>{matchPct}%</Text>
+                                <Text style={[styles.matchPctText, { color: matchColor }]}>{matchPct}%</Text>
                                 <Text style={[styles.matchLabelText, { color: matchColor }]}>{matchLabel}</Text>
                             </View>
                         </View>
@@ -295,7 +377,7 @@ export default function ListingDetailScreen() {
                                     <Ionicons
                                         name={item.match ? 'checkmark-circle' : 'close-circle'}
                                         size={18}
-                                        color={item.match ? COLORS.success : COLORS.accent}
+                                        color={item.match ? COLORS.trust : COLORS.danger}
                                         style={{ marginRight: 8 }}
                                     />
                                     <Text style={styles.breakdownLabel}>{item.label}</Text>
@@ -313,10 +395,12 @@ export default function ListingDetailScreen() {
             {/* Bottom CTA */}
             {lister && lister.id !== user?.id && (
                 <View style={styles.bottomBar}>
-                    <TouchableOpacity style={styles.messageButton} onPress={handleChat} activeOpacity={0.85}>
-                        <Ionicons name="chatbubble-outline" size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
-                        <Text style={styles.messageButtonText}>Message {lister.full_name?.split(' ')[0]}</Text>
-                    </TouchableOpacity>
+                    <GradientButton
+                        title={`Message ${lister.full_name?.split(' ')[0] || 'User'}`}
+                        icon="chatbubble-outline"
+                        onPress={handleChat}
+                        style={{ width: '100%' }}
+                    />
                 </View>
             )}
         </View>
@@ -329,7 +413,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         backgroundColor: COLORS.bg,
     },
     scrollContent: {
-        paddingBottom: 100,
+        paddingBottom: 110,
     },
     header: {
         paddingTop: 60,
@@ -337,7 +421,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginBottom: SPACING.lg,
+        marginBottom: SPACING.md,
     },
     headerLeft: {
         flexDirection: 'row',
@@ -345,7 +429,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     ownerActions: {
         flexDirection: 'row',
-        gap: SPACING.md,
+        gap: SPACING.sm,
     },
     actionButton: {
         width: 40,
@@ -372,6 +456,84 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.h2,
         color: COLORS.textPrimary,
     },
+    galleryContainer: {
+        width: SCREEN_WIDTH,
+        height: 250,
+        marginBottom: SPACING.md,
+    },
+    galleryImage: {
+        width: SCREEN_WIDTH,
+        height: 250,
+    },
+    dotsContainer: {
+        position: 'absolute',
+        bottom: 12,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 6,
+    },
+    dot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: 'rgba(255,255,255,0.4)',
+    },
+    activeDot: {
+        width: 18,
+        backgroundColor: COLORS.accent,
+    },
+    placeholderBanner: {
+        width: SCREEN_WIDTH,
+        height: 160,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: SPACING.md,
+    },
+    matchStrip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: COLORS.bgCard,
+        marginHorizontal: SPACING.lg,
+        marginBottom: SPACING.md,
+        padding: SPACING.md,
+        borderRadius: RADIUS.lg,
+        borderWidth: 1,
+        borderColor: COLORS.border,
+        gap: SPACING.md,
+    },
+    matchStripRing: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        borderWidth: 2.5,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    matchStripPct: {
+        fontSize: 12,
+        fontWeight: '800',
+        lineHeight: 14,
+    },
+    matchStripLabel: {
+        fontSize: 7,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+    },
+    matchStripTextWrap: {
+        flex: 1,
+    },
+    matchStripTitle: {
+        ...FONTS.bodyBold,
+        color: COLORS.textPrimary,
+        marginBottom: 2,
+    },
+    matchStripSubtitle: {
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        lineHeight: 16,
+    },
     card: {
         backgroundColor: COLORS.bgCard,
         borderRadius: RADIUS.xl,
@@ -393,20 +555,20 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         borderRadius: RADIUS.sm,
     },
     statusTagSpace: {
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        backgroundColor: COLORS.trustDim,
     },
     statusTagRoommate: {
-        backgroundColor: 'rgba(108, 58, 237, 0.1)',
+        backgroundColor: COLORS.accentDim,
     },
     statusTagText: {
         ...FONTS.small,
         fontWeight: '600',
     },
     statusTagTextSpace: {
-        color: COLORS.success,
+        color: COLORS.trust,
     },
     statusTagTextRoommate: {
-        color: COLORS.primaryLight,
+        color: COLORS.accent,
     },
     price: {
         ...FONTS.h2,
@@ -416,6 +578,20 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.caption,
         color: COLORS.textMuted,
         fontWeight: '400',
+    },
+    unavailableBanner: {
+        backgroundColor: 'rgba(241, 101, 101, 0.1)',
+        padding: 8,
+        borderRadius: RADIUS.sm,
+        marginBottom: 16,
+        borderWidth: 1,
+        borderColor: 'rgba(241, 101, 101, 0.2)',
+    },
+    unavailableText: {
+        color: COLORS.danger,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        ...FONTS.caption,
     },
     title: {
         ...FONTS.h1,
@@ -452,25 +628,9 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
     },
-    avatar: {
-        width: 48,
-        height: 48,
-        borderRadius: 24,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    avatarText: {
-        color: '#FFFFFF',
-        fontSize: 18,
-        fontWeight: '600',
-    },
     listerInfo: {
         flex: 1,
         marginLeft: SPACING.md,
-    },
-    listerNameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
     },
     listerName: {
         ...FONTS.bodyBold,
@@ -506,7 +666,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
     },
     breakdownRowBorder: {
         borderBottomWidth: 1,
-        borderBottomColor: COLORS.borderLight,
+        borderBottomColor: COLORS.border,
     },
     breakdownLeft: {
         flexDirection: 'row',
@@ -533,18 +693,5 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         backgroundColor: COLORS.bgCard,
         borderTopWidth: 1,
         borderTopColor: COLORS.border,
-    },
-    messageButton: {
-        flexDirection: 'row',
-        backgroundColor: COLORS.primary,
-        padding: SPACING.md,
-        borderRadius: RADIUS.md,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    messageButtonText: {
-        color: '#FFFFFF',
-        ...FONTS.bodyBold,
-        fontSize: 16,
     },
 });
