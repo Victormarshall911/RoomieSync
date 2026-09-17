@@ -151,9 +151,8 @@ export default function ConversationsScreen() {
                         name={otherUser?.full_name || ''}
                         imageUrl={otherUser?.avatar_url}
                         size="lg"
+                        verified={otherUser?.is_verified}
                     />
-                    {/* Online indicator dot */}
-                    <View style={styles.onlineDot} />
                 </View>
                 <View style={styles.convContent}>
                     <View style={styles.convHeader}>
@@ -306,22 +305,11 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         borderColor: COLORS.border,
     },
     convItemUnread: {
-        borderColor: `${COLORS.primary}40`,
-        backgroundColor: `${COLORS.primary}08`,
+        borderColor: COLORS.accentDim,
+        backgroundColor: COLORS.bgCard2,
     },
     avatarWrap: {
         position: 'relative',
-    },
-    onlineDot: {
-        position: 'absolute',
-        bottom: 1,
-        right: 1,
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        backgroundColor: COLORS.success,
-        borderWidth: 2,
-        borderColor: COLORS.bgCard,
     },
     convContent: {
         flex: 1,
@@ -344,7 +332,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         color: COLORS.textMuted,
     },
     convTimeUnread: {
-        color: COLORS.primaryLight,
+        color: COLORS.accent,
         fontWeight: '600',
     },
     convFooter: {
@@ -362,10 +350,10 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         fontWeight: '600',
     },
     unreadDot: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: COLORS.primary,
+        width: 8,
+        height: 8,
+        borderRadius: 4,
+        backgroundColor: COLORS.accent,
         marginLeft: SPACING.sm,
     },
     emptyContainer: {
@@ -376,7 +364,7 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: `${COLORS.primary}15`,
+        backgroundColor: COLORS.accentDim,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: SPACING.lg,
