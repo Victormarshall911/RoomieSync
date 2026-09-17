@@ -82,7 +82,7 @@ export default function ProfileSetupScreen() {
 
                 <View style={styles.card}>
                     <InputField COLORS={COLORS} styles={styles} label="Full Name" placeholder="e.g. Victor Adebayo" value={fullName} onChangeText={setFullName} />
-                    
+
                     <Text style={styles.inputLabel}>University</Text>
                     <Dropdown
                         style={[styles.dropdown, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border }]}
@@ -145,7 +145,7 @@ export default function ProfileSetupScreen() {
                     onPress={handleNext}
                 />
 
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={{ marginTop: SPACING.lg, alignItems: 'center', marginBottom: SPACING.xl }}
                     onPress={() => navigation.navigate('Auth' as any)}
                 >
