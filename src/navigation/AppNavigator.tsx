@@ -63,7 +63,7 @@ export type RootStackParamList = {
     ListingDetail: { listing: Listing };
     EditListing: { listing: Listing };
     UserProfile: { profile: Profile };
-    TermsOfService: undefined;
+    TermsOfService: { fromOnboarding?: boolean } | undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();

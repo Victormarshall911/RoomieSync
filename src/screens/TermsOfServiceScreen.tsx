@@ -1,14 +1,24 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
 import { useTheme } from '../context/ThemeContext';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
+import { RootStackParamList } from '../navigation/AppNavigator';
+import ProgressBar from '../components/ProgressBar';
+import GradientButton from '../components/GradientButton';
 
 export default function TermsOfServiceScreen() {
-    const navigation = useNavigation();
+    const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
+    const route = useRoute<RouteProp<RootStackParamList, 'TermsOfService'>>();
+    const fromOnboarding = route.params?.fromOnboarding ?? false;
     const { colors: COLORS } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
+
+    const handleAccept = () => {
+        navigation.navigate('Auth', { isSignUp: true });
+    };
 
     const Section = ({ title, content }: { title: string; content: string }) => (
         <View style={styles.section}>
@@ -25,6 +35,13 @@ export default function TermsOfServiceScreen() {
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Terms of Service</Text>
             </View>
+
+            {fromOnboarding && (
+                <View style={styles.progressContainer}>
+                    <ProgressBar currentStep={4} totalSteps={5} />
+                    <Text style={styles.stepLabel}>Step 4 of 5</Text>
+                </View>
+            )}
 
             <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
                 <Text style={styles.lastUpdated}>Last Updated: April 30, 2026</Text>
@@ -73,6 +90,16 @@ export default function TermsOfServiceScreen() {
                     content="RoomieSync reserves the right to modify these terms at any time. We will notify users of any significant changes via the app."
                 />
 
+                {fromOnboarding && (
+                    <View style={styles.onboardingAction}>
+                        <GradientButton
+                            title="I Agree & Continue"
+                            onPress={handleAccept}
+                            style={{ width: '100%' }}
+                        />
+                    </View>
+                )}
+
                 <View style={styles.footer}>
                     <Text style={styles.footerText}>© 2026 RoomieSync. All rights reserved.</Text>
                 </View>
@@ -93,6 +120,16 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         paddingVertical: SPACING.md,
         borderBottomWidth: 1,
         borderBottomColor: COLORS.border,
+    },
+    progressContainer: {
+        paddingTop: SPACING.xs,
+        paddingBottom: SPACING.xs,
+    },
+    stepLabel: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
+        textAlign: 'center',
+        marginBottom: SPACING.xs,
     },
     backButton: {
         width: 40,
@@ -137,6 +174,10 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         ...FONTS.body,
         color: COLORS.textSecondary,
         lineHeight: 22,
+    },
+    onboardingAction: {
+        marginTop: SPACING.md,
+        marginBottom: SPACING.md,
     },
     footer: {
         marginTop: SPACING.xl,

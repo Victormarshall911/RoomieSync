@@ -136,7 +136,7 @@ export default function LifestyleSurveyScreen() {
             try {
                 await AsyncStorage.setItem('@pending_profile', JSON.stringify(fullProfileToSave));
                 // Next step in onboarding is Terms of Service (step 4 of 5), then Auth (step 5 of 5)
-                navigation.navigate('TermsOfService' as any);
+                navigation.navigate('TermsOfService', { fromOnboarding: true });
             } catch (e) {
                 Alert.alert('Error', 'Could not save profile data');
             }
