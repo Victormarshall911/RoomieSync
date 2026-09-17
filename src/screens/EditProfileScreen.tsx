@@ -17,9 +17,9 @@ import { uploadAvatarToSupabase } from '../utils/imageUpload';
 
 const SLEEP_OPTIONS = ['Early Bird', 'Night Owl'];
 const CLEANLINESS_OPTIONS = [
-    { value: 2, label: 'Tidy' },
-    { value: 7, label: 'Very Clean' },
-    { value: 10, label: 'Spotless' },
+    { value: 3, label: 'Tidy' },
+    { value: 6, label: 'Very Clean' },
+    { value: 9, label: 'Spotless' },
 ];
 const SOCIAL_OPTIONS = ['Rarely', 'Guests often'];
 const SMOKING_OPTIONS = ['No', 'Yes'];
@@ -209,7 +209,7 @@ export default function EditProfileScreen() {
 
                             <Text style={styles.fieldLabel}>Gender</Text>
                             <View style={styles.chipRow}>
-                                {['Male', 'Female'].map((g) => (
+                                {['Male', 'Female', 'Non-binary', 'Prefer not to say'].map((g) => (
                                     <TouchableOpacity
                                         key={g}
                                         style={[styles.chip, gender === g && styles.chipActive]}
