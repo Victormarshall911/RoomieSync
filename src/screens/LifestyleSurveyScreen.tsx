@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
@@ -10,6 +10,8 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import GradientButton from '../components/GradientButton';
+import ProgressBar from '../components/ProgressBar';
+
 // Lifestyle onboarding survey
 const LIFESTYLE_OPTIONS = {
     sleep_habit: {
@@ -22,9 +24,9 @@ const LIFESTYLE_OPTIONS = {
     cleanliness: {
         label: 'Cleanliness',
         options: [
-            { value: 2, label: 'Tidy', desc: 'Keep it clean' },
-            { value: 7, label: 'Very Clean', desc: 'Spotless always' },
-            { value: 10, label: 'Professional', desc: 'Surgical clean' },
+            { value: 3, label: 'Tidy', desc: 'Keep it clean' },
+            { value: 6, label: 'Very Clean', desc: 'Spotless always' },
+            { value: 9, label: 'Professional', desc: 'Surgical clean' },
         ],
     },
     socializing: {
@@ -79,7 +81,7 @@ export default function LifestyleSurveyScreen() {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const route = useRoute<RouteProp<RootStackParamList, 'LifestyleSurvey'>>();
     const { user, fetchProfile } = useAuth();
-    const { colors: COLORS, isDark } = useTheme();
+    const { colors: COLORS } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const { profileData } = route.params;
 
@@ -133,7 +135,8 @@ export default function LifestyleSurveyScreen() {
         if (!user) {
             try {
                 await AsyncStorage.setItem('@pending_profile', JSON.stringify(fullProfileToSave));
-                navigation.navigate('Auth', { isSignUp: true } as any);
+                // Next step in onboarding is Terms of Service (step 4 of 5), then Auth (step 5 of 5)
+                navigation.navigate('TermsOfService' as any);
             } catch (e) {
                 Alert.alert('Error', 'Could not save profile data');
             }
@@ -158,16 +161,10 @@ export default function LifestyleSurveyScreen() {
     return (
         <View style={styles.container}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
+                {/* Progress Bar (Step 3 of 5) */}
+                <ProgressBar currentStep={3} totalSteps={5} />
 
-                <View style={styles.progressRow}>
-                    <View style={[styles.progressDot, styles.progressDone]} />
-                    <View style={[styles.progressLine, styles.progressLineDone]} />
-                    <View style={[styles.progressDot, styles.progressDone]} />
-                    <View style={[styles.progressLine, styles.progressLineDone]} />
-                    <View style={[styles.progressDot, styles.progressActive]} />
-                </View>
-
-                <Text style={styles.stepLabel}>Step 3 of 3</Text>
+                <Text style={styles.stepLabel}>Step 3 of 5</Text>
                 <Text style={styles.title}>Lifestyle</Text>
                 <Text style={styles.subtitle}>This helps us find your ideal match</Text>
 
@@ -208,12 +205,12 @@ export default function LifestyleSurveyScreen() {
                     </View>
                 ) : (
                     <View style={[styles.card, {alignItems: 'center', paddingVertical: 40}]}>
-                        <Ionicons name="checkmark-circle" size={80} color={COLORS.success} style={{marginBottom: 20}} />
+                        <Ionicons name="checkmark-circle" size={80} color={COLORS.trust} style={{marginBottom: 20}} />
                         <Text style={styles.title}>All Done!</Text>
                         <Text style={[styles.subtitle, {marginBottom: 30}]}>You've answered all lifestyle questions.</Text>
                         
                         <GradientButton
-                            title="Complete Profile"
+                            title="Continue to Terms"
                             onPress={handleSubmit}
                             loading={loading}
                             disabled={!allSelected}
@@ -236,55 +233,50 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         backgroundColor: COLORS.bg,
     },
     content: { padding: SPACING.lg, paddingTop: 60, paddingBottom: SPACING.xxl },
-    progressRow: {
-        flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-        marginBottom: SPACING.lg,
-    },
-    progressDot: {
-        width: 10, height: 10, borderRadius: 5,
-        backgroundColor: COLORS.bgInput,
-        borderWidth: 2, borderColor: COLORS.border,
-    },
-    progressActive: {
-        backgroundColor: COLORS.primary, borderColor: COLORS.primary,
-    },
-    progressDone: {
-        backgroundColor: COLORS.success, borderColor: COLORS.success,
-    },
-    progressLine: {
-        width: 40, height: 2, backgroundColor: COLORS.border,
-        marginHorizontal: SPACING.xs,
-    },
-    progressLineDone: { backgroundColor: COLORS.success },
     stepLabel: {
-        ...FONTS.small, color: COLORS.textMuted,
-        textAlign: 'center', marginBottom: SPACING.xs,
+        ...FONTS.small,
+        color: COLORS.textMuted,
+        textAlign: 'center',
+        marginBottom: SPACING.xs,
+        marginTop: SPACING.sm,
     },
     title: {
-        ...FONTS.h1, color: COLORS.textPrimary, textAlign: 'center',
+        ...FONTS.h1,
+        color: COLORS.textPrimary,
+        textAlign: 'center',
     },
     subtitle: {
-        ...FONTS.caption, color: COLORS.textSecondary,
-        textAlign: 'center', marginBottom: SPACING.lg,
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        textAlign: 'center',
+        marginBottom: SPACING.lg,
     },
     card: {
         backgroundColor: COLORS.bgCard,
         borderRadius: RADIUS.xl,
         padding: SPACING.lg,
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1,
+        borderColor: COLORS.border,
         marginBottom: SPACING.md,
     },
     stepIndicator: {
-        ...FONTS.caption, color: COLORS.primary, marginBottom: SPACING.xs, fontWeight: 'bold', textTransform: 'uppercase'
+        ...FONTS.caption,
+        color: COLORS.primary,
+        marginBottom: SPACING.xs,
+        fontWeight: 'bold',
+        textTransform: 'uppercase',
     },
     cardTitle: {
-        ...FONTS.h3, color: COLORS.textPrimary, marginBottom: SPACING.md,
+        ...FONTS.h3,
+        color: COLORS.textPrimary,
+        marginBottom: SPACING.md,
     },
     optionsGrid: { gap: SPACING.sm },
     optionChip: {
         padding: SPACING.md,
         borderRadius: RADIUS.md,
-        borderWidth: 1, borderColor: COLORS.border,
+        borderWidth: 1,
+        borderColor: COLORS.border,
         backgroundColor: COLORS.bgInput,
     },
     optionChipActive: {
@@ -292,24 +284,14 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         backgroundColor: COLORS.primaryFaded,
     },
     optionLabel: {
-        ...FONTS.bodyBold, color: COLORS.textPrimary,
+        ...FONTS.bodyBold,
+        color: COLORS.textPrimary,
     },
     optionLabelActive: { color: COLORS.primaryLight },
     optionDesc: {
-        ...FONTS.caption, color: COLORS.textSecondary, marginTop: 2,
+        ...FONTS.caption,
+        color: COLORS.textSecondary,
+        marginTop: 2,
     },
     optionDescActive: { color: COLORS.textSecondary },
-    submitButton: {
-        backgroundColor: COLORS.primary,
-        padding: SPACING.md,
-        borderRadius: RADIUS.md,
-        alignItems: 'center',
-        marginTop: SPACING.sm,
-    },
-    submitButtonDisabled: {
-        backgroundColor: COLORS.bgInput,
-    },
-    submitButtonText: {
-        color: '#FFFFFF', ...FONTS.bodyBold, fontSize: 16,
-    },
 });
