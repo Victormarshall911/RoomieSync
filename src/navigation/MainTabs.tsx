@@ -49,10 +49,10 @@ export default function MainTabs() {
             id="MainTabs"
             screenOptions={({ route }) => ({
                 headerShown: false,
-                tabBarActiveTintColor: COLORS.primaryLight,
+                tabBarActiveTintColor: COLORS.accent,
                 tabBarInactiveTintColor: COLORS.textMuted,
                 tabBarStyle: {
-                    backgroundColor: isDark ? '#1A1A2E' : '#FFFFFF',
+                    backgroundColor: COLORS.bgCard,
                     height: Platform.OS === 'ios' ? 88 : 72,
                     borderTopWidth: 1,
                     borderTopColor: COLORS.border,
@@ -62,7 +62,7 @@ export default function MainTabs() {
                     paddingTop: 8,
                 },
                 tabBarLabelStyle: {
-                    fontSize: 10,
+                    fontSize: 11,
                     fontWeight: '700',
                     letterSpacing: 0.3,
                 },
@@ -100,8 +100,8 @@ export default function MainTabs() {
                     tabBarLabel: 'Chats',
                     tabBarBadge: unreadCount > 0 ? unreadCount : undefined,
                     tabBarBadgeStyle: {
-                        backgroundColor: COLORS.primary,
-                        color: '#FFFFFF',
+                        backgroundColor: COLORS.accent,
+                        color: '#1A1204',
                         fontSize: 10,
                         fontWeight: '700',
                     }
