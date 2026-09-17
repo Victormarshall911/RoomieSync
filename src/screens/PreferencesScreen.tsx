@@ -1,96 +1,137 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useTheme } from '../context/ThemeContext';
 import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import GradientButton from '../components/GradientButton';
+import ProgressBar from '../components/ProgressBar';
 
 export default function PreferencesScreen() {
     const navigation = useNavigation<StackNavigationProp<RootStackParamList>>();
     const route = useRoute<RouteProp<RootStackParamList, 'Preferences'>>();
-    const { colors: COLORS, isDark } = useTheme();
+    const { colors: COLORS } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS), [COLORS]);
     const { profileData } = route.params;
 
     const [budgetMin, setBudgetMin] = useState('200000');
     const [budgetMax, setBudgetMax] = useState('500000');
     const [location, setLocation] = useState('');
+    const [error, setError] = useState('');
+
+    const formatWithCommas = (val: string) => {
+        if (!val) return '';
+        const num = parseInt(val.replace(/[^0-9]/g, ''), 10);
+        return isNaN(num) ? '' : num.toLocaleString();
+    };
+
+    const handleMinChange = (text: string) => {
+        const clean = text.replace(/[^0-9]/g, '');
+        setBudgetMin(clean);
+        setError('');
+    };
+
+    const handleMaxChange = (text: string) => {
+        const clean = text.replace(/[^0-9]/g, '');
+        setBudgetMax(clean);
+        setError('');
+    };
 
     const handleNext = () => {
-        if (!location) {
-            Alert.alert('Error', 'Please enter a location preference');
+        const minVal = parseInt(budgetMin.replace(/[^0-9]/g, '') || '0', 10);
+        const maxVal = parseInt(budgetMax.replace(/[^0-9]/g, '') || '0', 10);
+
+        if (!minVal || !maxVal) {
+            setError('Please enter a valid budget range');
             return;
         }
+        if (minVal > maxVal) {
+            setError('Minimum budget cannot exceed maximum budget');
+            return;
+        }
+        if (!location.trim()) {
+            setError('Please enter a preferred location');
+            return;
+        }
+
+        setError('');
         navigation.navigate('LifestyleSurvey', {
             profileData: {
                 ...profileData,
-                budgetMin: parseInt(budgetMin),
-                budgetMax: parseInt(budgetMax),
-                locationPreference: location,
+                budgetMin: minVal,
+                budgetMax: maxVal,
+                locationPreference: location.trim(),
             }
         });
     };
 
+    const minNum = parseInt(budgetMin || '0', 10);
+    const maxNum = parseInt(budgetMax || '0', 10);
+
     return (
         <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
             <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
-                {/* Progress */}
-                <View style={styles.progressRow}>
-                    <View style={[styles.progressDot, styles.progressDone]} />
-                    <View style={[styles.progressLine, styles.progressLineDone]} />
-                    <View style={[styles.progressDot, styles.progressActive]} />
-                    <View style={styles.progressLine} />
-                    <View style={styles.progressDot} />
-                </View>
+                {/* Progress Bar (Step 2 of 5) */}
+                <ProgressBar currentStep={2} totalSteps={5} />
 
-                <Text style={styles.stepLabel}>Step 2 of 3</Text>
+                <Text style={styles.stepLabel}>Step 2 of 5</Text>
                 <Text style={styles.title}>Preferences</Text>
                 <Text style={styles.subtitle}>Budget & location requirements</Text>
 
                 <View style={styles.card}>
                     <Text style={styles.inputLabel}>Budget range (₦ / year)</Text>
                     <View style={styles.rangeContainer}>
-                        <View style={[styles.inputWrapper, { flex: 1 }]}>
+                        <View style={[styles.currencyInputWrapper, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border }]}>
+                            <Text style={[styles.currencyPrefix, { color: COLORS.textMuted }]}>₦</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.currencyInput, { color: COLORS.textPrimary }]}
                                 placeholder="Min"
                                 placeholderTextColor={COLORS.textMuted}
-                                keyboardType="numeric"
-                                value={budgetMin}
-                                onChangeText={setBudgetMin}
+                                keyboardType="number-pad"
+                                value={formatWithCommas(budgetMin)}
+                                onChangeText={handleMinChange}
                             />
                         </View>
-                        <Text style={styles.rangeDash}>–</Text>
-                        <View style={[styles.inputWrapper, { flex: 1 }]}>
+                        <Text style={[styles.rangeDash, { color: COLORS.textMuted }]}>–</Text>
+                        <View style={[styles.currencyInputWrapper, { backgroundColor: COLORS.bgInput, borderColor: COLORS.border }]}>
+                            <Text style={[styles.currencyPrefix, { color: COLORS.textMuted }]}>₦</Text>
                             <TextInput
-                                style={styles.input}
+                                style={[styles.currencyInput, { color: COLORS.textPrimary }]}
                                 placeholder="Max"
                                 placeholderTextColor={COLORS.textMuted}
-                                keyboardType="numeric"
-                                value={budgetMax}
-                                onChangeText={setBudgetMax}
+                                keyboardType="number-pad"
+                                value={formatWithCommas(budgetMax)}
+                                onChangeText={handleMaxChange}
                             />
                         </View>
                     </View>
 
-                    <View style={styles.budgetPreview}>
-                        <Text style={styles.budgetPreviewText}>
-                            ₦{parseInt(budgetMin || '0').toLocaleString()} – ₦{parseInt(budgetMax || '0').toLocaleString()}
-                        </Text>
-                    </View>
+                    {minNum > 0 && maxNum > 0 && minNum <= maxNum ? (
+                        <View style={[styles.budgetPreview, { backgroundColor: COLORS.accentDim }]}>
+                            <Text style={[styles.budgetPreviewText, { color: COLORS.accent }]}>
+                                ₦{minNum.toLocaleString()} – ₦{maxNum.toLocaleString()} / year
+                            </Text>
+                        </View>
+                    ) : null}
 
                     <Text style={[styles.inputLabel, { marginTop: SPACING.lg }]}>Preferred location</Text>
-                    <View style={styles.inputWrapper}>
+                    <View style={[styles.inputWrapper, { backgroundColor: COLORS.bgInput, borderColor: (!location.trim() && error.includes('location')) ? COLORS.danger : COLORS.border }]}>
                         <TextInput
-                            style={styles.input}
+                            style={[styles.input, { color: COLORS.textPrimary }]}
                             placeholder="e.g. Akoka, Yaba"
                             placeholderTextColor={COLORS.textMuted}
                             value={location}
-                            onChangeText={setLocation}
+                            onChangeText={(text) => {
+                                setLocation(text);
+                                setError('');
+                            }}
                         />
                     </View>
+
+                    {error ? (
+                        <Text style={[styles.errorText, { color: COLORS.danger }]}>{error}</Text>
+                    ) : null}
                 </View>
 
                 <GradientButton
@@ -108,36 +149,12 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         backgroundColor: COLORS.bg,
     },
     content: { padding: SPACING.lg, paddingTop: 60 },
-    progressRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: SPACING.lg,
-    },
-    progressDot: {
-        width: 10, height: 10, borderRadius: 5,
-        backgroundColor: COLORS.bgInput,
-        borderWidth: 2, borderColor: COLORS.border,
-    },
-    progressActive: {
-        backgroundColor: COLORS.primary, borderColor: COLORS.primary,
-    },
-    progressDone: {
-        backgroundColor: COLORS.success, borderColor: COLORS.success,
-    },
-    progressLine: {
-        width: 40, height: 2,
-        backgroundColor: COLORS.border,
-        marginHorizontal: SPACING.xs,
-    },
-    progressLineDone: {
-        backgroundColor: COLORS.success,
-    },
     stepLabel: {
         ...FONTS.small,
         color: COLORS.textMuted,
         textAlign: 'center',
         marginBottom: SPACING.xs,
+        marginTop: SPACING.sm,
     },
     title: {
         ...FONTS.h1,
@@ -169,41 +186,46 @@ const createStyles = (COLORS: any) => StyleSheet.create({
         gap: SPACING.sm,
     },
     rangeDash: {
-        color: COLORS.textMuted,
         fontSize: 18,
     },
-    inputWrapper: {
-        backgroundColor: COLORS.bgInput,
+    currencyInputWrapper: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
         borderRadius: RADIUS.md,
         borderWidth: 1,
-        borderColor: COLORS.border,
+        paddingHorizontal: SPACING.sm,
+    },
+    currencyPrefix: {
+        ...FONTS.bodyBold,
+        marginRight: 4,
+    },
+    currencyInput: {
+        flex: 1,
+        paddingVertical: SPACING.md,
+        ...FONTS.body,
+    },
+    inputWrapper: {
+        borderRadius: RADIUS.md,
+        borderWidth: 1,
     },
     input: {
         padding: SPACING.md,
         ...FONTS.body,
-        color: COLORS.textPrimary,
     },
     budgetPreview: {
         marginTop: SPACING.md,
-        backgroundColor: COLORS.primaryFaded,
         borderRadius: RADIUS.sm,
         padding: SPACING.sm,
         alignItems: 'center',
     },
     budgetPreviewText: {
         ...FONTS.bodyBold,
-        color: COLORS.primaryLight,
     },
-    nextButton: {
-        backgroundColor: COLORS.primary,
-        padding: SPACING.md,
-        borderRadius: RADIUS.md,
-        alignItems: 'center',
-        marginBottom: SPACING.xxl,
-    },
-    nextButtonText: {
-        color: '#FFFFFF',
-        ...FONTS.bodyBold,
-        fontSize: 16,
+    errorText: {
+        ...FONTS.caption,
+        marginTop: SPACING.sm,
+        fontSize: 12,
+        textAlign: 'center',
     },
 });
