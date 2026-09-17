@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Switch, Linking, Platform } from 'react-native';
+import React from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, Alert, Switch, Linking } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import Avatar from '../components/Avatar';
 import { Ionicons } from '@expo/vector-icons';
-import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
+import { SPACING, RADIUS, FONTS } from '../utils/theme';
 import Constants from 'expo-constants';
 
 const APP_VERSION = Constants.expoConfig?.version || '1.0.0';
@@ -16,7 +16,6 @@ export default function SettingsScreen() {
     const { colors: COLORS, isDark, toggleTheme } = useTheme();
     const styles = React.useMemo(() => createStyles(COLORS, isDark), [COLORS, isDark]);
     const navigation = useNavigation<any>();
-    const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
     const handleDeleteAccount = async () => {
         Alert.alert(
@@ -66,15 +65,15 @@ export default function SettingsScreen() {
             activeOpacity={onPress ? 0.7 : 1}
             disabled={!onPress}
         >
-            <View style={[styles.menuIconWrap, destructive && { backgroundColor: 'rgba(239, 68, 68, 0.1)' }]}>
+            <View style={[styles.menuIconWrap, destructive && { backgroundColor: 'rgba(241, 101, 101, 0.12)' }]}>
                 <Ionicons
                     name={icon as any}
                     size={20}
-                    color={destructive ? '#EF4444' : COLORS.primaryLight}
+                    color={destructive ? COLORS.danger : COLORS.accent}
                 />
             </View>
             <View style={styles.menuContent}>
-                <Text style={[styles.menuLabel, destructive && { color: '#EF4444' }]}>{label}</Text>
+                <Text style={[styles.menuLabel, destructive && { color: COLORS.danger }]}>{label}</Text>
                 {subtitle && <Text style={styles.menuSubtitle}>{subtitle}</Text>}
             </View>
             {trailing || (onPress && <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />)}
@@ -107,12 +106,12 @@ export default function SettingsScreen() {
                         <View style={styles.profileBadges}>
                             {profile?.is_verified ? (
                                 <View style={styles.verifiedBadge}>
-                                    <Ionicons name="checkmark-circle" size={13} color={COLORS.success} style={{ marginRight: 3 }} />
+                                    <Ionicons name="checkmark-circle" size={13} color={COLORS.trust} style={{ marginRight: 3 }} />
                                     <Text style={styles.verifiedText}>Verified Student</Text>
                                 </View>
                             ) : (
                                 <View style={styles.unverifiedBadge}>
-                                    <Ionicons name="alert-circle-outline" size={13} color={COLORS.accent} style={{ marginRight: 3 }} />
+                                    <Ionicons name="alert-circle-outline" size={13} color={COLORS.textMuted} style={{ marginRight: 3 }} />
                                     <Text style={styles.unverifiedText}>Not Verified</Text>
                                 </View>
                             )}
@@ -139,37 +138,21 @@ export default function SettingsScreen() {
                 </View>
 
                 {/* Preferences Section */}
-                <Text style={styles.sectionTitle}>Preferences</Text>
+                <Text style={styles.sectionTitle}>Appearance</Text>
                 <View style={styles.card}>
                     <MenuItem
-                        icon={isDark ? 'moon' : 'sunny'}
+                        icon={isDark ? 'moon-outline' : 'sunny-outline'}
                         label="Dark Mode"
-                        subtitle={isDark ? 'On' : 'Off'}
+                        subtitle={isDark ? 'Dark theme active' : 'Light theme active'}
                         trailing={
                             <Switch
                                 value={isDark}
                                 onValueChange={toggleTheme}
                                 trackColor={{
                                     false: COLORS.bgInput,
-                                    true: `${COLORS.primary}80`,
+                                    true: COLORS.accentDim,
                                 }}
-                                thumbColor={isDark ? COLORS.primaryLight : '#f4f3f4'}
-                            />
-                        }
-                    />
-                    <MenuItem
-                        icon="notifications-outline"
-                        label="Push Notifications"
-                        subtitle={notificationsEnabled ? 'Enabled' : 'Disabled'}
-                        trailing={
-                            <Switch
-                                value={notificationsEnabled}
-                                onValueChange={setNotificationsEnabled}
-                                trackColor={{
-                                    false: COLORS.bgInput,
-                                    true: `${COLORS.primary}80`,
-                                }}
-                                thumbColor={notificationsEnabled ? COLORS.primaryLight : '#f4f3f4'}
+                                thumbColor={isDark ? COLORS.accent : '#f4f3f4'}
                             />
                         }
                     />
@@ -205,7 +188,7 @@ export default function SettingsScreen() {
                 <View style={styles.aboutSection}>
                     <Text style={styles.aboutAppName}>RoomieSync</Text>
                     <Text style={styles.aboutVersion}>Version {APP_VERSION}</Text>
-                    <Text style={styles.aboutTagline}>Made with ❤️ by Victor Marshall 🇳🇬</Text>
+                    <Text style={styles.aboutTagline}>Made with ❤️ for Nigerian Students 🇳🇬</Text>
                     <View style={styles.aboutLinks}>
                         <TouchableOpacity
                             onPress={() => Linking.openURL('https://roomiesync.app/privacy')}
@@ -215,17 +198,10 @@ export default function SettingsScreen() {
                         </TouchableOpacity>
                         <Text style={styles.aboutDot}>·</Text>
                         <TouchableOpacity
-                            onPress={() => Linking.openURL('https://roomiesync.app/terms')}
+                            onPress={() => navigation.navigate('TermsOfService')}
                             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
                         >
                             <Text style={styles.aboutLink}>Terms</Text>
-                        </TouchableOpacity>
-                        <Text style={styles.aboutDot}>·</Text>
-                        <TouchableOpacity
-                            onPress={() => Linking.openURL('https://roomiesync.app/support')}
-                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                            <Text style={styles.aboutLink}>Support</Text>
                         </TouchableOpacity>
                     </View>
                 </View>
@@ -240,19 +216,18 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
         backgroundColor: COLORS.bg,
     },
     scrollContent: {
-        paddingBottom: 100,
+        paddingTop: 20,
+        paddingBottom: 80,
     },
     header: {
         paddingTop: 40,
-        paddingHorizontal: 12,
+        paddingHorizontal: SPACING.lg,
         paddingBottom: SPACING.md,
     },
     headerTitle: {
         ...FONTS.h1,
         color: COLORS.textPrimary,
     },
-
-    // Profile quick-view
     profileCard: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -284,31 +259,29 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
     verifiedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: `${COLORS.success}15`,
+        backgroundColor: COLORS.trustDim,
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: RADIUS.full,
     },
     verifiedText: {
         ...FONTS.small,
-        color: COLORS.success,
+        color: COLORS.trust,
         fontWeight: '600',
     },
     unverifiedBadge: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: `${COLORS.accent}15`,
+        backgroundColor: COLORS.bgCard2,
         paddingHorizontal: 8,
         paddingVertical: 3,
         borderRadius: RADIUS.full,
     },
     unverifiedText: {
         ...FONTS.small,
-        color: COLORS.accent,
+        color: COLORS.textMuted,
         fontWeight: '600',
     },
-
-    // Sections
     sectionTitle: {
         ...FONTS.caption,
         color: COLORS.textMuted,
@@ -328,20 +301,18 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
         borderColor: COLORS.border,
         overflow: 'hidden',
     },
-
-    // Menu items
     menuItem: {
         flexDirection: 'row',
         alignItems: 'center',
         padding: SPACING.md,
         borderBottomWidth: 1,
-        borderBottomColor: COLORS.borderLight,
+        borderBottomColor: COLORS.border,
     },
     menuIconWrap: {
         width: 36,
         height: 36,
         borderRadius: 10,
-        backgroundColor: `${COLORS.primary}15`,
+        backgroundColor: COLORS.accentDim,
         alignItems: 'center',
         justifyContent: 'center',
         marginRight: SPACING.md,
@@ -359,8 +330,6 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
         color: COLORS.textMuted,
         marginTop: 1,
     },
-
-    // About
     aboutSection: {
         alignItems: 'center',
         paddingVertical: SPACING.xl,
@@ -388,8 +357,8 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
     },
     aboutLink: {
         ...FONTS.caption,
-        color: COLORS.primaryLight,
-        fontWeight: '500',
+        color: COLORS.accent,
+        fontWeight: '600',
     },
     aboutDot: {
         color: COLORS.textMuted,
