@@ -1,5 +1,17 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, TextInput, RefreshControl, Animated, Platform, Alert } from 'react-native';
+import {
+    View,
+    Text,
+    FlatList,
+    TouchableOpacity,
+    StyleSheet,
+    ActivityIndicator,
+    TextInput,
+    RefreshControl,
+    Animated,
+    Platform,
+    Alert,
+} from 'react-native';
 import { Image } from 'expo-image';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { supabase } from '../lib/supabase';
@@ -8,10 +20,11 @@ import { useTheme } from '../context/ThemeContext';
 import { calculateMatchPercentage, Profile } from '../utils/matching';
 import { getAvatarColor, getMatchColor } from '../utils/avatarUtils';
 import Avatar from '../components/Avatar';
+import SkeletonCard from '../components/SkeletonCard';
 import { Ionicons } from '@expo/vector-icons';
 import { SPACING, RADIUS, FONTS, SHADOWS } from '../utils/theme';
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 export interface Listing {
     id: string;
@@ -25,6 +38,7 @@ export interface Listing {
     creator_name_demo?: string;
     created_at: string;
     is_available?: boolean;
+    images?: string[];
     profiles?: Profile; // Joined profile
 }
 
@@ -34,7 +48,7 @@ function AnimatedCard({ index, children, style }: { index: number; children: Rea
     const slideAnim = useRef(new Animated.Value(20)).current;
 
     useEffect(() => {
-        const delay = Math.min(index * 60, 300); // Cap max delay
+        const delay = Math.min(index * 60, 300);
         Animated.parallel([
             Animated.timing(fadeAnim, {
                 toValue: 1,
@@ -83,9 +97,9 @@ export default function DiscoveryScreen() {
     // Scroll-direction tracking for floating search bar
     const scrollY = useRef(0);
     const lastScrollY = useRef(0);
-    const floatingBarAnim = useRef(new Animated.Value(-140)).current; // hidden above screen
+    const floatingBarAnim = useRef(new Animated.Value(-140)).current;
     const [showFloatingBar, setShowFloatingBar] = useState(false);
-    const SCROLL_THRESHOLD = 200; // only show floating bar after scrolling past inline search
+    const SCROLL_THRESHOLD = 200;
 
     const handleScroll = useCallback((event: any) => {
         const currentY = event.nativeEvent.contentOffset.y;
@@ -208,6 +222,8 @@ export default function DiscoveryScreen() {
         const creatorName = item.profiles?.full_name || item.creator_name_demo || 'User';
         const matchPct = (profile && item.profiles) ? calculateMatchPercentage(profile as Profile, item.profiles) : (item.user_id ? 0 : 85);
         const matchColor = getMatchColor(matchPct, COLORS);
+        const hasPhoto = item.images && item.images.length > 0;
+        const photoUri = hasPhoto ? item.images![0] : undefined;
 
         return (
             <AnimatedCard index={index} style={styles.card}>
@@ -216,41 +232,68 @@ export default function DiscoveryScreen() {
                     onPress={() => navigation.navigate('ListingDetail', { listing: item })}
                     style={styles.cardInner}
                 >
-                    <View style={styles.cardHeader}>
-                        <Avatar
-                            name={creatorName}
-                            imageUrl={item.profiles?.avatar_url}
-                            size="md"
-                        />
-                        {/* Match Ring */}
-                        <View style={[styles.matchRing, { borderColor: matchColor }]}>
-                            <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
-                        </View>
-                    </View>
-                    <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
-                    <Text style={styles.uniTag} numberOfLines={1}>{creatorName}</Text>
-                    <Text style={styles.deptTag} numberOfLines={1}>{item.location}</Text>
+                    {/* Photo Area */}
+                    <View style={styles.photoContainer}>
+                        {photoUri ? (
+                            <Image source={{ uri: photoUri }} style={styles.cardPhoto} contentFit="cover" />
+                        ) : (
+                            <View style={[styles.photoPlaceholder, { backgroundColor: COLORS.bgCard2 }]}>
+                                <Ionicons
+                                    name={item.searching_for === 'Listing a Space' ? "home-outline" : "person-outline"}
+                                    size={34}
+                                    color={COLORS.textMuted}
+                                />
+                            </View>
+                        )}
 
-                    <View style={styles.tagsRow}>
-                        <View style={[
-                            styles.statusTag,
-                            item.searching_for === 'Listing a Space' ? styles.statusTagSpace : styles.statusTagRoommate
-                        ]}>
-                            <Text style={[
-                                styles.statusTagText,
-                                item.searching_for === 'Listing a Space' ? styles.statusTagTextSpace : styles.statusTagTextRoommate
-                            ]}>
-                                {item.searching_for === 'Listing a Space' ? 'Has Room' : 'Needs Roomie'}
-                            </Text>
-                        </View>
+                        {/* Verified Pill - Top Left */}
                         {(item.profiles?.is_verified || !item.user_id) && (
                             <View style={styles.verifiedTag}>
-                                <Ionicons name="checkmark-circle" size={13} color={COLORS.success} style={{ marginRight: 3 }} />
+                                <Ionicons name="checkmark-circle" size={12} color={COLORS.trust} style={{ marginRight: 3 }} />
                                 <Text style={styles.verifiedTagText}>Verified</Text>
                             </View>
                         )}
-                        <View style={styles.budgetTag}>
-                            <Text style={styles.budgetTagText}>₦{((item.price || 0) / 1000).toFixed(0)}k</Text>
+
+                        {/* Circular Match Ring - Top Right */}
+                        <View style={[styles.matchRing, { borderColor: matchColor }]}>
+                            <Text style={[styles.matchText, { color: matchColor }]}>{matchPct}%</Text>
+                            <Text style={[styles.matchLabel, { color: matchColor }]}>MATCH</Text>
+                        </View>
+                    </View>
+
+                    {/* Content Section */}
+                    <View style={styles.cardContent}>
+                        <View style={styles.creatorRow}>
+                            <Avatar
+                                name={creatorName}
+                                imageUrl={item.profiles?.avatar_url}
+                                size="sm"
+                            />
+                            <View style={styles.creatorInfo}>
+                                <Text style={styles.creatorName} numberOfLines={1}>{creatorName}</Text>
+                                {item.location ? (
+                                    <Text style={styles.locationText} numberOfLines={1}>{item.location}</Text>
+                                ) : null}
+                            </View>
+                        </View>
+
+                        <Text style={styles.name} numberOfLines={2}>{item.title}</Text>
+
+                        <View style={styles.tagsRow}>
+                            <View style={[
+                                styles.statusTag,
+                                item.searching_for === 'Listing a Space' ? styles.statusTagSpace : styles.statusTagRoommate
+                            ]}>
+                                <Text style={[
+                                    styles.statusTagText,
+                                    item.searching_for === 'Listing a Space' ? styles.statusTagTextSpace : styles.statusTagTextRoommate
+                                ]}>
+                                    {item.searching_for === 'Listing a Space' ? 'Has Room' : 'Needs Roomie'}
+                                </Text>
+                            </View>
+                            <View style={styles.budgetTag}>
+                                <Text style={styles.budgetTagText}>₦{((item.price || 0) / 1000).toFixed(0)}k</Text>
+                            </View>
                         </View>
                     </View>
                 </TouchableOpacity>
@@ -262,18 +305,10 @@ export default function DiscoveryScreen() {
         if (!loadingMore) return null;
         return (
             <View style={styles.footerLoading}>
-                <ActivityIndicator color={COLORS.primary} />
+                <ActivityIndicator color={COLORS.accent} />
             </View>
         );
     };
-
-    if (loading && !refreshing && listings.length === 0) {
-        return (
-            <View style={[styles.container, styles.centered]}>
-                <ActivityIndicator size="large" color={COLORS.primary} />
-            </View>
-        );
-    }
 
     const listHeader = () => (
         <>
@@ -316,7 +351,7 @@ export default function DiscoveryScreen() {
             {/* Error Message */}
             {error && (
                 <View style={styles.errorBanner}>
-                    <Ionicons name="alert-circle-outline" size={16} color="#f87171" style={{ marginRight: 6 }} />
+                    <Ionicons name="alert-circle-outline" size={16} color={COLORS.danger} style={{ marginRight: 6 }} />
                     <Text style={styles.errorText}>{error}</Text>
                 </View>
             )}
@@ -356,6 +391,24 @@ export default function DiscoveryScreen() {
         </>
     );
 
+    if (loading && !refreshing && listings.length === 0) {
+        return (
+            <View style={styles.container}>
+                {listHeader()}
+                <View style={[styles.row, { paddingHorizontal: SPACING.md, marginTop: SPACING.md }]}>
+                    <View style={{ width: '48%' }}>
+                        <SkeletonCard />
+                        <SkeletonCard />
+                    </View>
+                    <View style={{ width: '48%' }}>
+                        <SkeletonCard />
+                        <SkeletonCard />
+                    </View>
+                </View>
+            </View>
+        );
+    }
+
     return (
         <View style={styles.container}>
             <FlatList
@@ -376,15 +429,15 @@ export default function DiscoveryScreen() {
                     <RefreshControl
                         refreshing={refreshing}
                         onRefresh={handleRefresh}
-                        tintColor={COLORS.primary}
-                        colors={[COLORS.primary]}
+                        tintColor={COLORS.accent}
+                        colors={[COLORS.accent]}
                     />
                 }
                 ListEmptyComponent={
-                    !loading && (
+                    !loading ? (
                         <View style={styles.emptyContainer}>
                             <View style={styles.emptyIconWrap}>
-                                <Ionicons name="home-outline" size={40} color={COLORS.primaryLight} />
+                                <Ionicons name="home-outline" size={40} color={COLORS.accent} />
                             </View>
                             <Text style={styles.emptyTitle}>No listings yet</Text>
                             <Text style={styles.emptyText}>Be the first to post a room or find a roommate</Text>
@@ -393,11 +446,11 @@ export default function DiscoveryScreen() {
                                 onPress={handleCreateListing}
                                 activeOpacity={0.8}
                             >
-                                <Ionicons name="add" size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
-                                <Text style={styles.emptyCtaText}>Create Listing</Text>
+                                <Ionicons name="add" size={18} color="#1A1204" style={{ marginRight: 6 }} />
+                                <Text style={styles.emptyCtaText}>Post a Room</Text>
                             </TouchableOpacity>
                         </View>
-                    )
+                    ) : null
                 }
             />
 
@@ -440,7 +493,7 @@ export default function DiscoveryScreen() {
                 activeOpacity={0.8}
                 onPress={handleCreateListing}
             >
-                <Ionicons name="add" size={28} color="#FFFFFF" />
+                <Ionicons name="add" size={28} color="#1A1204" />
             </TouchableOpacity>
         </View>
     );
@@ -507,16 +560,16 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
     errorBanner: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: 'rgba(239, 68, 68, 0.1)',
+        backgroundColor: 'rgba(241, 101, 101, 0.1)',
         marginHorizontal: SPACING.lg,
         padding: SPACING.sm,
         borderRadius: RADIUS.sm,
         borderWidth: 1,
-        borderColor: 'rgba(239, 68, 68, 0.2)',
+        borderColor: 'rgba(241, 101, 101, 0.2)',
         marginBottom: SPACING.md,
     },
     errorText: {
-        color: '#f87171',
+        color: COLORS.danger,
         ...FONTS.small,
         flex: 1,
     },
@@ -586,16 +639,16 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
         borderColor: COLORS.border,
     },
     filterChipActive: {
-        backgroundColor: COLORS.primary,
-        borderColor: COLORS.primary,
+        backgroundColor: COLORS.accent,
+        borderColor: COLORS.accent,
     },
     filterChipText: {
         ...FONTS.caption,
         color: COLORS.textSecondary,
     },
     filterChipTextActive: {
-        color: '#FFFFFF',
-        fontWeight: '600',
+        color: '#1A1204',
+        fontWeight: '700',
     },
     list: {
         paddingHorizontal: SPACING.md,
@@ -611,101 +664,140 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
     cardInner: {
         backgroundColor: COLORS.bgCard,
         borderRadius: RADIUS.xl,
-        padding: SPACING.md,
         borderWidth: 1,
         borderColor: COLORS.border,
+        overflow: 'hidden',
     },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
+    photoContainer: {
+        width: '100%',
+        height: 120,
+        position: 'relative',
+        backgroundColor: COLORS.bgCard2,
+    },
+    cardPhoto: {
+        width: '100%',
+        height: '100%',
+    },
+    photoPlaceholder: {
+        width: '100%',
+        height: '100%',
         alignItems: 'center',
-        marginBottom: SPACING.md,
+        justifyContent: 'center',
+    },
+    verifiedTag: {
+        position: 'absolute',
+        top: 8,
+        left: 8,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.7)',
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: RADIUS.full,
+    },
+    verifiedTagText: {
+        ...FONTS.small,
+        fontWeight: '700',
+        fontSize: 10,
     },
     matchRing: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        position: 'absolute',
+        top: 8,
+        right: 8,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
         borderWidth: 2.5,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: isDark ? 'rgba(0,0,0,0.3)' : 'rgba(255,255,255,0.8)',
+        backgroundColor: isDark ? 'rgba(0,0,0,0.75)' : 'rgba(255,255,255,0.9)',
     },
     matchText: {
         fontSize: 11,
         fontWeight: '800',
         letterSpacing: -0.3,
+        lineHeight: 12,
+    },
+    matchLabel: {
+        fontSize: 7,
+        fontWeight: '800',
+        letterSpacing: 0.5,
+        marginTop: 1,
+    },
+    cardContent: {
+        padding: SPACING.sm,
+    },
+    creatorRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 6,
+        gap: 6,
+    },
+    creatorInfo: {
+        flex: 1,
+    },
+    creatorName: {
+        ...FONTS.caption,
+        fontWeight: '600',
+        color: COLORS.textPrimary,
+    },
+    locationText: {
+        ...FONTS.small,
+        color: COLORS.textMuted,
+        fontSize: 10,
     },
     name: {
         ...FONTS.bodyBold,
         color: COLORS.textPrimary,
-        marginBottom: 2,
-    },
-    uniTag: {
-        ...FONTS.caption,
-        color: COLORS.textSecondary,
-        marginBottom: 2,
-    },
-    deptTag: {
-        ...FONTS.small as any,
-        color: COLORS.textMuted,
-        marginBottom: SPACING.md,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
+        fontSize: 13,
+        marginBottom: 8,
+        minHeight: 34,
     },
     tagsRow: {
-        flexDirection: 'column',
-        gap: 6,
-        marginBottom: SPACING.md,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: 2,
     },
     statusTag: {
-        alignSelf: 'flex-start',
-        paddingHorizontal: 8,
-        paddingVertical: 4,
+        paddingHorizontal: 6,
+        paddingVertical: 3,
         borderRadius: RADIUS.sm,
     },
     statusTagSpace: {
-        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+        backgroundColor: COLORS.trustDim,
     },
     statusTagRoommate: {
-        backgroundColor: 'rgba(108, 58, 237, 0.1)',
+        backgroundColor: COLORS.accentDim,
     },
     statusTagText: {
         ...FONTS.small,
         fontWeight: '600',
+        fontSize: 10,
     },
     statusTagTextSpace: {
-        color: COLORS.success,
+        color: COLORS.trust,
     },
     statusTagTextRoommate: {
-        color: COLORS.primaryLight,
-    },
-    verifiedTag: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        alignSelf: 'flex-start',
-    },
-    verifiedTagText: {
-        ...FONTS.small,
-        color: COLORS.success,
-        fontWeight: '600',
+        color: COLORS.accent,
     },
     budgetTag: {
-        alignSelf: 'flex-start',
         borderWidth: 1,
         borderColor: COLORS.border,
-        paddingHorizontal: 8,
+        paddingHorizontal: 6,
         paddingVertical: 2,
         borderRadius: RADIUS.sm,
     },
     budgetTagText: {
         ...FONTS.small,
         color: COLORS.textSecondary,
+        fontWeight: '600',
+        fontSize: 11,
     },
     footerLoading: {
         paddingVertical: SPACING.md,
         alignItems: 'center',
     },
-    // Enhanced empty state
     emptyContainer: {
         alignItems: 'center',
         paddingTop: 60,
@@ -715,7 +807,7 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
         width: 80,
         height: 80,
         borderRadius: 40,
-        backgroundColor: `${COLORS.primary}15`,
+        backgroundColor: COLORS.accentDim,
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: SPACING.lg,
@@ -734,13 +826,13 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
     emptyCta: {
         flexDirection: 'row',
         alignItems: 'center',
-        backgroundColor: COLORS.primary,
+        backgroundColor: COLORS.accent,
         paddingHorizontal: SPACING.lg,
         paddingVertical: SPACING.sm + 2,
         borderRadius: RADIUS.md,
     },
     emptyCtaText: {
-        color: '#FFFFFF',
+        color: '#1A1204',
         ...FONTS.bodyBold,
         fontSize: 14,
     },
@@ -751,7 +843,7 @@ const createStyles = (COLORS: any, isDark: boolean) => StyleSheet.create({
         width: 56,
         height: 56,
         borderRadius: 28,
-        backgroundColor: COLORS.primary,
+        backgroundColor: COLORS.accent,
         alignItems: 'center',
         justifyContent: 'center',
         ...SHADOWS.button,
